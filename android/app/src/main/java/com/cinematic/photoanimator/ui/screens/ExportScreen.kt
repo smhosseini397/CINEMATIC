@@ -1,9 +1,8 @@
+```kotlin
 package com.cinematic.photoanimator.ui.screens
 
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,11 +13,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cinematic.photoanimator.data.model.VideoOrientation
 import com.cinematic.photoanimator.ui.theme.*
 import com.cinematic.photoanimator.ui.viewmodel.AnimatorViewModel
 
@@ -39,6 +38,12 @@ fun ExportScreen(
         }
     }
 
+    val settings = uiState.exportSettings
+    val orientation = settings.orientation
+    val width = settings.outputWidth
+    val height = settings.outputHeight
+    val fps = settings.frameRate.fps
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -48,30 +53,43 @@ fun ExportScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
+
         // Top Bar
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onNavigateHome) {
-                Icon(Icons.Default.Close, contentDescription = "Close", tint = TextPrimary)
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = "Close",
+                    tint = TextPrimary
+                )
             }
+
             Spacer(modifier = Modifier.width(8.dp))
+
             Text(
-                text = if (progress.isCompleted) "Video Ready" else "MediaCodec Rendering",
+                text = if (progress.isCompleted) {
+                    "Video Ready"
+                } else {
+                    "MediaCodec Rendering"
+                },
                 style = MaterialTheme.typography.titleLarge,
                 color = TextPrimary,
                 fontWeight = FontWeight.Bold
             )
         }
 
-        // Center Content: Gauge / Completion Card
+        // Center Content
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             if (!progress.isCompleted) {
-                // Active Hardware Encoding State
+
+                // Rendering Gauge
                 Box(
                     modifier = Modifier.size(190.dp),
                     contentAlignment = Alignment.Center
@@ -84,7 +102,9 @@ fun ExportScreen(
                         strokeWidth = 10.dp
                     )
 
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
                         Text(
                             text = "${progress.percentage.toInt()}%",
                             style = MaterialTheme.typography.headlineLarge,
@@ -92,6 +112,7 @@ fun ExportScreen(
                             fontWeight = FontWeight.Bold,
                             color = LuxuryGold
                         )
+
                         Text(
                             text = "Frame ${progress.currentFrame} / ${progress.totalFrames}",
                             style = MaterialTheme.typography.labelSmall,
@@ -102,24 +123,43 @@ fun ExportScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Real-time Statistics Card
+                // Statistics Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = CharcoalSurface)
+                    colors = CardDefaults.cardColors(
+                        containerColor = CharcoalSurface
+                    )
                 ) {
-                    Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(
+                        modifier = Modifier.padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Estimated Remaining Time", style = MaterialTheme.typography.bodyMedium, color = TextMuted)
-                            Text(progress.formattedRemainingTime, style = MaterialTheme.typography.bodyMedium, color = TextPrimary, fontWeight = FontWeight.Bold)
+                            Text(
+                                "Estimated Remaining Time",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextMuted
+                            )
+
+                            Text(
+                                progress.formattedRemainingTime,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
 
                         LinearProgressIndicator(
                             progress = { progress.percentage / 100f },
-                            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
                             color = LuxuryGold,
                             trackColor = BrushedSlate
                         )
@@ -128,17 +168,69 @@ fun ExportScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Encoder", style = MaterialTheme.typography.labelSmall, color = TextMuted)
-                            Text("MediaCodec H.264 Hardware Acceleration", style = MaterialTheme.typography.labelSmall, color = SuccessGreen)
+                            Text(
+                                "Encoder",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextMuted
+                            )
+
+                            Text(
+                                "MediaCodec H.264 Hardware Acceleration",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = SuccessGreen
+                            )
                         }
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Output Specs", style = MaterialTheme.typography.labelSmall, color = TextMuted)
                             Text(
-                                "${uiState.exportSettings.resolution.label} · ${uiState.exportSettings.frameRate.label} · MP4",
+                                "Orientation",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextMuted
+                            )
+
+                            Text(
+                                when (orientation) {
+                                    VideoOrientation.PORTRAIT -> "Portrait 9:16"
+                                    VideoOrientation.LANDSCAPE -> "Landscape 16:9"
+                                },
+                                style = MaterialTheme.typography.labelSmall,
+                                color = LuxuryGold,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                "Output Specs",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextMuted
+                            )
+
+                            Text(
+                                "${width} × ${height}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextSecondary
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                "Format",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextMuted
+                            )
+
+                            Text(
+                                "MP4 · H.264 · $fps FPS",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = TextSecondary
                             )
@@ -147,11 +239,15 @@ fun ExportScreen(
                 }
 
             } else {
+
                 // Completed State
                 Box(
                     modifier = Modifier
                         .size(100.dp)
-                        .background(SuccessGreen.copy(alpha = 0.15f), CircleShape),
+                        .background(
+                            SuccessGreen.copy(alpha = 0.15f),
+                            CircleShape
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -172,35 +268,62 @@ fun ExportScreen(
                 )
 
                 Text(
-                    text = "Exported at 60 FPS with authentic color preservation",
+                    text = "Export completed with authentic color preservation",
                     style = MaterialTheme.typography.bodyLarge,
                     color = TextSecondary
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+                // Output Details
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = CharcoalSurface)
+                    colors = CardDefaults.cardColors(
+                        containerColor = CharcoalSurface
+                    )
                 ) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+
                         Text(
                             text = "Output Details",
                             style = MaterialTheme.typography.titleLarge,
                             fontSize = 14.sp,
                             color = LuxuryGold
                         )
+
                         Text(
-                            text = "Format: MP4 (H.264 High Profile / 60 FPS)",
+                            text = "Format: MP4 (H.264 High Profile / $fps FPS)",
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextPrimary
                         )
+
                         Text(
-                            text = "Resolution: ${uiState.exportSettings.resolution.width} × ${uiState.exportSettings.resolution.height}",
+                            text = "Orientation: ${
+                                when (orientation) {
+                                    VideoOrientation.PORTRAIT -> "Portrait 9:16"
+                                    VideoOrientation.LANDSCAPE -> "Landscape 16:9"
+                                }
+                            }",
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextPrimary
                         )
+
+                        Text(
+                            text = "Resolution: $width × $height",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextPrimary
+                        )
+
+                        Text(
+                            text = "Duration: ${settings.durationSeconds} seconds",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextPrimary
+                        )
+
                         Text(
                             text = "File: ${uiState.lastExportedFile?.name ?: "video.mp4"}",
                             style = MaterialTheme.typography.labelSmall,
@@ -216,26 +339,50 @@ fun ExportScreen(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+
             if (progress.isCompleted) {
+
                 Button(
                     onClick = {
                         viewModel.saveExportedVideoToGallery()
-                        Toast.makeText(context, "Saved to Device Movies Gallery!", Toast.LENGTH_SHORT).show()
+
+                        Toast.makeText(
+                            context,
+                            "Saved to Device Movies Gallery!",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     },
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (uiState.isSavedToGallery) SuccessGreen else LuxuryGold,
+                        containerColor = if (uiState.isSavedToGallery) {
+                            SuccessGreen
+                        } else {
+                            LuxuryGold
+                        },
                         contentColor = ObsidianBlack
                     )
                 ) {
+
                     Icon(
-                        imageVector = if (uiState.isSavedToGallery) Icons.Default.Check else Icons.Default.SaveAlt,
+                        imageVector = if (uiState.isSavedToGallery) {
+                            Icons.Default.Check
+                        } else {
+                            Icons.Default.SaveAlt
+                        },
                         contentDescription = null
                     )
+
                     Spacer(modifier = Modifier.width(8.dp))
+
                     Text(
-                        text = if (uiState.isSavedToGallery) "Saved in Movies/CinematicAnimator" else "Save to Phone Gallery",
+                        text = if (uiState.isSavedToGallery) {
+                            "Saved in Movies/CinematicAnimator"
+                        } else {
+                            "Save to Phone Gallery"
+                        },
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -243,17 +390,38 @@ fun ExportScreen(
                 OutlinedButton(
                     onClick = {
                         val shareIntent = viewModel.getShareIntent()
+
                         if (shareIntent != null) {
-                            context.startActivity(android.content.Intent.createChooser(shareIntent, "Share Cinematic Video"))
+                            context.startActivity(
+                                android.content.Intent.createChooser(
+                                    shareIntent,
+                                    "Share Cinematic Video"
+                                )
+                            )
                         }
                     },
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
                     shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = TextPrimary),
-                    border = ButtonDefaults.outlinedButtonBorder.copy(brush = androidx.compose.ui.graphics.SolidColor(LuxuryGold))
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = TextPrimary
+                    ),
+                    border = ButtonDefaults.outlinedButtonBorder.copy(
+                        brush = androidx.compose.ui.graphics.SolidColor(
+                            LuxuryGold
+                        )
+                    )
                 ) {
-                    Icon(Icons.Default.Share, contentDescription = null, tint = LuxuryGold)
+
+                    Icon(
+                        Icons.Default.Share,
+                        contentDescription = null,
+                        tint = LuxuryGold
+                    )
+
                     Spacer(modifier = Modifier.width(8.dp))
+
                     Text("Share Video File")
                 }
 
@@ -261,9 +429,14 @@ fun ExportScreen(
                     onClick = onNavigateHome,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Done / Back to Projects", color = TextSecondary)
+                    Text(
+                        "Done / Back to Projects",
+                        color = TextSecondary
+                    )
                 }
+
             } else {
+
                 Text(
                     text = "Please keep app open while hardware encoder finishes frames",
                     style = MaterialTheme.typography.labelSmall,
@@ -274,3 +447,4 @@ fun ExportScreen(
         }
     }
 }
+```
