@@ -30,10 +30,8 @@ fun ExportScreen(
     val context = LocalContext.current
 
     LaunchedEffect(Unit) {
-        if (!progress.isRendering && !progress.isCompleted) {
-            viewModel.startRender { file ->
-                // Render completed callback
-            }
+        viewModel.startRender {
+            // Render completed callback
         }
     }
 
