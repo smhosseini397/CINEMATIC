@@ -32,9 +32,6 @@ class MediaCodecVideoEncoder {
 
         private const val I_FRAME_INTERVAL = 1
 
-        /**
-         * بررسی پشتیبانی از یک رزولوشن و نرخ فریم مشخص
-         */
         fun isVideoSupported(
             width: Int,
             height: Int,
@@ -83,9 +80,6 @@ class MediaCodecVideoEncoder {
             return false
         }
 
-        /**
-         * بررسی پشتیبانی از 4K
-         */
         fun is4KSupported(): Boolean {
             return isVideoSupported(
                 3840,
@@ -94,9 +88,6 @@ class MediaCodecVideoEncoder {
             )
         }
 
-        /**
-         * بررسی پشتیبانی از 4K با 60 فریم
-         */
         fun is4K60Supported(): Boolean {
             return isVideoSupported(
                 3840,
@@ -116,29 +107,21 @@ class MediaCodecVideoEncoder {
 
         val width = settings.outputWidth
         val height = settings.outputHeight
-        val requestedFps = settings.frameRate.fps
+        val fps = settings.frameRate.fps
         val totalFrames = settings.totalFrames
         val bitrate = settings.resolution.defaultBitrate
 
-        /*
-         * قبل از ساخت Encoder بررسی می کنیم که دستگاه
-         * واقعاً رزولوشن و FPS انتخاب شده را پشتیبانی می کند.
-         *
-         * این قسمت جلوی گیر کردن 4K/60 را می گیرد.
-         */
         if (
             !isVideoSupported(
                 width,
                 height,
-                requestedFps
+                fps
             )
         ) {
             throw IllegalArgumentException(
-                "این دستگاه از خروجی ${width}x${height} با نرخ $requestedFps فریم بر ثانیه پشتیبانی نمی کند."
+                "این دستگاه از خروجی ${width}x${height} با نرخ $fps فریم بر ثانیه پشتیبانی نمی کند."
             )
         }
-
-        val fps = requestedFps
 
         val format =
             MediaFormat.createVideoFormat(
@@ -167,15 +150,6 @@ class MediaCodecVideoEncoder {
                     MediaFormat.KEY_I_FRAME_INTERVAL,
                     I_FRAME_INTERVAL
                 )
-
-                /*
-                 * Profile و Level را عمداً به صورت اجباری
-                 * تعیین نمی کنیم.
-                 *
-                 * بعضی Encoderهای سخت افزاری با مقدار اجباری
-                 * High / Level 5.1 در بعضی حالت ها مشکل دارند.
-                 * اجازه می دهیم خود Encoder مقدار مناسب را انتخاب کند.
-                 */
             }
 
         val encoder =
@@ -214,7 +188,6 @@ class MediaCodecVideoEncoder {
                     MediaCodec.CONFIGURE_FLAG_ENCODE
                 )
             } catch (e: Exception) {
-
                 throw RuntimeException(
                     "Encoder برای خروجی ${width}x${height} با $fps FPS قابل تنظیم نیست.",
                     e
@@ -246,7 +219,7 @@ class MediaCodecVideoEncoder {
             val bitmapPaint =
                 Paint(
                     Paint.ANTI_ALIAS_FLAG or
-                        Paint.FILTER_BITMAP_FLAG
+                            Paint.FILTER_BITMAP_FLAG
                 ).apply {
                     isDither = true
                 }
@@ -255,7 +228,7 @@ class MediaCodecVideoEncoder {
                 Paint(
                     Paint.ANTI_ALIAS_FLAG
                 ).apply {
-                    this.style = Paint.Style.FILL
+                    style = Paint.Style.FILL
                 }
 
             for (
@@ -264,8 +237,8 @@ class MediaCodecVideoEncoder {
 
                 val progressFraction =
                     frameIndex.toFloat() /
-                        (totalFrames - 1)
-                            .coerceAtLeast(1)
+                            (totalFrames - 1)
+                                .coerceAtLeast(1)
 
                 val transform =
                     CinematicMotionEngine
@@ -318,9 +291,9 @@ class MediaCodecVideoEncoder {
 
                     matrix.postScale(
                         scaleFit *
-                            transform.scale,
+                                transform.scale,
                         scaleFit *
-                            transform.scale
+                                transform.scale
                     )
 
                     matrix.postRotate(
@@ -329,15 +302,15 @@ class MediaCodecVideoEncoder {
 
                     matrix.postTranslate(
                         centerX +
-                            (
-                                transform.translationX *
-                                    width
-                            ),
+                                (
+                                    transform.translationX *
+                                            width
+                                    ),
                         centerY +
-                            (
-                                transform.translationY *
-                                    height
-                            )
+                                (
+                                    transform.translationY *
+                                            height
+                                    )
                     )
 
                     canvas.drawBitmap(
@@ -359,19 +332,19 @@ class MediaCodecVideoEncoder {
 
                         val lx =
                             centerX +
-                                (
-                                    cos(rad).toFloat() *
-                                        centerX *
-                                        0.8f
-                                )
+                                    (
+                                        cos(rad).toFloat() *
+                                                centerX *
+                                                0.8f
+                                        )
 
                         val ly =
                             centerY +
-                                (
-                                    sin(rad).toFloat() *
-                                        centerY *
-                                        0.8f
-                                )
+                                    (
+                                        sin(rad).toFloat() *
+                                                centerY *
+                                                0.8f
+                                        )
 
                         val lightRadius =
                             max(
@@ -382,8 +355,8 @@ class MediaCodecVideoEncoder {
                         val alpha =
                             (
                                 transform.lightIntensity *
-                                    255
-                            )
+                                        255
+                                )
                                 .toInt()
                                 .coerceIn(
                                     0,
@@ -438,16 +411,16 @@ class MediaCodecVideoEncoder {
 
                 val elapsed =
                     System.currentTimeMillis() -
-                        startTimeMs
+                            startTimeMs
 
                 val framesRemaining =
                     totalFrames -
-                        (frameIndex + 1)
+                            (frameIndex + 1)
 
                 val avgTimePerFrame =
                     if (frameIndex > 0) {
                         elapsed.toFloat() /
-                            (frameIndex + 1)
+                                (frameIndex + 1)
                     } else {
                         25f
                     }
@@ -455,8 +428,8 @@ class MediaCodecVideoEncoder {
                 val remainingMs =
                     (
                         framesRemaining *
-                            avgTimePerFrame
-                    ).toLong()
+                                avgTimePerFrame
+                        ).toLong()
 
                 onProgress(
                     RenderProgress(
@@ -470,8 +443,8 @@ class MediaCodecVideoEncoder {
                             (
                                 (frameIndex + 1)
                                     .toFloat() /
-                                    totalFrames
-                            ) * 100f,
+                                        totalFrames
+                                ) * 100f,
                         elapsedMillis =
                             elapsed,
                         estimatedRemainingMillis =
@@ -499,7 +472,7 @@ class MediaCodecVideoEncoder {
 
             val totalElapsed =
                 System.currentTimeMillis() -
-                    startTimeMs
+                        startTimeMs
 
             onProgress(
                 RenderProgress(
@@ -582,12 +555,6 @@ class MediaCodecVideoEncoder {
                     break
                 }
 
-                /*
-                 * اگر EOS به هر دلیل دریافت نشود،
-                 * برای همیشه در حلقه نمانیم.
-                 *
-                 * حدود 10 ثانیه فرصت می دهیم.
-                 */
                 noOutputCount++
 
                 if (noOutputCount > 1000) {
@@ -639,8 +606,8 @@ class MediaCodecVideoEncoder {
                 if (
                     (
                         bufferInfo.flags and
-                            MediaCodec.BUFFER_FLAG_CODEC_CONFIG
-                    ) != 0
+                                MediaCodec.BUFFER_FLAG_CODEC_CONFIG
+                        ) != 0
                 ) {
                     bufferInfo.size = 0
                 }
@@ -656,7 +623,7 @@ class MediaCodecVideoEncoder {
 
                     encodedData.limit(
                         bufferInfo.offset +
-                            bufferInfo.size
+                                bufferInfo.size
                     )
 
                     muxer.writeSampleData(
@@ -674,8 +641,8 @@ class MediaCodecVideoEncoder {
                 if (
                     (
                         bufferInfo.flags and
-                            MediaCodec.BUFFER_FLAG_END_OF_STREAM
-                    ) != 0
+                                MediaCodec.BUFFER_FLAG_END_OF_STREAM
+                        ) != 0
                 ) {
                     break
                 }
