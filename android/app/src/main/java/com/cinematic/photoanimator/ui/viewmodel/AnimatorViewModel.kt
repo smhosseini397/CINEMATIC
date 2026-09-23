@@ -12,6 +12,7 @@ import com.cinematic.photoanimator.data.model.MotionStyle
 import com.cinematic.photoanimator.data.model.PhotoItem
 import com.cinematic.photoanimator.data.model.RenderProgress
 import com.cinematic.photoanimator.data.model.VideoFrameRate
+import com.cinematic.photoanimator.data.model.VideoOrientation
 import com.cinematic.photoanimator.data.model.VideoResolution
 import com.cinematic.photoanimator.data.repository.PhotoRepository
 import com.cinematic.photoanimator.data.repository.PhotoRepositoryImpl
@@ -43,15 +44,32 @@ data class UiState(
 class AnimatorViewModel(application: Application) : AndroidViewModel(application) {
 
     private val photoRepository: PhotoRepository = PhotoRepositoryImpl(application)
-    private val videoEncoder: MediaCodecVideoEncoder = MediaCodecVideoEncoder()
-    private val exportRepository: VideoExportRepository = VideoExportRepositoryImpl(application, photoRepository, videoEncoder)
-    private val exportManager: VideoExportManager = VideoExportManager(exportRepository)
+
+    private val videoEncoder: MediaCodecVideoEncoder =
+        MediaCodecVideoEncoder()
+
+    private val exportRepository: VideoExportRepository =
+        VideoExportRepositoryImpl(
+            application,
+            photoRepository,
+            videoEncoder
+        )
+
+    private val exportManager: VideoExportManager =
+        VideoExportManager(exportRepository)
 
     private val _uiState = MutableStateFlow(UiState())
-    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
-    val renderProgress: StateFlow<RenderProgress> = exportManager.progressFlow
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), RenderProgress())
+    val uiState: StateFlow<UiState> =
+        _uiState.asStateFlow()
+
+    val renderProgress: StateFlow<RenderProgress> =
+        exportManager.progressFlow
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                RenderProgress()
+            )
 
     init {
         checkHardwareCapabilities()
@@ -60,12 +78,18 @@ class AnimatorViewModel(application: Application) : AndroidViewModel(application
 
     private fun checkHardwareCapabilities() {
         val can4K = MediaCodecVideoEncoder.is4KSupported()
-        _uiState.update { it.copy(is4KHardwareSupported = can4K) }
+
+        _uiState.update {
+            it.copy(
+                is4KHardwareSupported = can4K
+            )
+        }
     }
 
     fun loadDefaultSamplePhotos() {
         viewModelScope.launch {
             val samples = photoRepository.getSamplePersianCarpets()
+
             _uiState.update { state ->
                 state.copy(
                     selectedPhotos = samples,
@@ -77,6 +101,7 @@ class AnimatorViewModel(application: Application) : AndroidViewModel(application
 
     fun onPhotosSelected(photos: List<PhotoItem>) {
         if (photos.isEmpty()) return
+
         _uiState.update { state ->
             state.copy(
                 selectedPhotos = photos,
@@ -86,40 +111,89 @@ class AnimatorViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun selectPhoto(photo: PhotoItem) {
-        _uiState.update { it.copy(currentPhoto = photo) }
+        _uiState.update {
+            it.copy(
+                currentPhoto = photo
+            )
+        }
     }
 
     fun selectMotionStyle(style: MotionStyle) {
-        _uiState.update { it.copy(selectedMotionStyle = style) }
+        _uiState.update {
+            it.copy(
+                selectedMotionStyle = style
+            )
+        }
     }
 
     fun setDuration(seconds: Int) {
         _uiState.update { state ->
-            state.copy(exportSettings = state.exportSettings.copy(durationSeconds = seconds))
+            state.copy(
+                exportSettings = state.exportSettings.copy(
+                    durationSeconds = seconds
+                )
+            )
         }
     }
 
     fun setResolution(resolution: VideoResolution) {
         _uiState.update { state ->
-            state.copy(exportSettings = state.exportSettings.copy(resolution = resolution))
+            state.copy(
+                exportSettings = state.exportSettings.copy(
+                    resolution = resolution
+                )
+            )
+        }
+    }
+
+    /**
+     * Sets the final video orientation.
+     *
+     * Portrait:
+     * 1080p = 1080 x 1920
+     * 4K    = 2160 x 3840
+     *
+     * Landscape:
+     * 1080p = 1920 x 1080
+     * 4K    = 3840 x 2160
+     */
+    fun setOrientation(orientation: VideoOrientation) {
+        _uiState.update { state ->
+            state.copy(
+                exportSettings = state.exportSettings.copy(
+                    orientation = orientation
+                )
+            )
         }
     }
 
     fun setFrameRate(frameRate: VideoFrameRate) {
         _uiState.update { state ->
-            state.copy(exportSettings = state.exportSettings.copy(frameRate = frameRate))
+            state.copy(
+                exportSettings = state.exportSettings.copy(
+                    frameRate = frameRate
+                )
+            )
         }
     }
 
     fun selectCarpetType(type: CarpetType) {
         _uiState.update { state ->
-            state.copy(carpetProfile = CarpetShowcaseProfile(carpetType = type))
+            state.copy(
+                carpetProfile = CarpetShowcaseProfile(
+                    carpetType = type
+                )
+            )
         }
     }
 
     fun toggleFiberLighting(enabled: Boolean) {
         _uiState.update { state ->
-            state.copy(carpetProfile = state.carpetProfile.copy(enableFiberLightingGleam = enabled))
+            state.copy(
+                carpetProfile = state.carpetProfile.copy(
+                    enableFiberLightingGleam = enabled
+                )
+            )
         }
     }
 
@@ -129,32 +203,60 @@ class AnimatorViewModel(application: Application) : AndroidViewModel(application
         val settings = _uiState.value.exportSettings
 
         viewModelScope.launch {
-            val result = exportManager.exportVideo(photo, style, settings)
+            val result = exportManager.exportVideo(
+                photo,
+                style,
+                settings
+            )
+
             result.onSuccess { file ->
-                _uiState.update { it.copy(lastExportedFile = file, isSavedToGallery = false) }
+                _uiState.update {
+                    it.copy(
+                        lastExportedFile = file,
+                        isSavedToGallery = false
+                    )
+                }
+
                 onCompleted(file)
+
             }.onFailure { error ->
-                _uiState.update { it.copy(errorMessage = error.localizedMessage) }
+                _uiState.update {
+                    it.copy(
+                        errorMessage = error.localizedMessage
+                    )
+                }
             }
         }
     }
 
     fun saveExportedVideoToGallery() {
         val file = _uiState.value.lastExportedFile ?: return
+
         viewModelScope.launch {
             val uri = exportManager.saveToGallery(file)
+
             if (uri != null) {
-                _uiState.update { it.copy(isSavedToGallery = true) }
+                _uiState.update {
+                    it.copy(
+                        isSavedToGallery = true
+                    )
+                }
             }
         }
     }
 
     fun getShareIntent(): Intent? {
-        val file = _uiState.value.lastExportedFile ?: return null
+        val file = _uiState.value.lastExportedFile
+            ?: return null
+
         return exportManager.getShareIntent(file)
     }
 
     fun clearError() {
-        _uiState.update { it.copy(errorMessage = null) }
+        _uiState.update {
+            it.copy(
+                errorMessage = null
+            )
+        }
     }
 }
