@@ -24,7 +24,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.cinematic.photoanimator.data.model.MotionStyle
 import com.cinematic.photoanimator.ui.theme.*
 import com.cinematic.photoanimator.ui.viewmodel.AnimatorViewModel
 
@@ -47,7 +46,6 @@ fun HomeScreen(
             .verticalScroll(scrollState)
             .padding(20.dp)
     ) {
-        // App Title & Luxury Branding
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -55,14 +53,14 @@ fun HomeScreen(
         ) {
             Column {
                 Text(
-                    text = "CINEMATIC",
+                    text = "سینماتیک",
                     style = MaterialTheme.typography.labelSmall,
                     color = LuxuryGold,
                     letterSpacing = 2.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Photo Animator",
+                    text = "انیمیشن عکس",
                     style = MaterialTheme.typography.headlineLarge,
                     color = TextPrimary
                 )
@@ -78,14 +76,21 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Mode Choice: Persian Carpet Luxury Mode Banner
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, LuxuryGold.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
-                .clickable { onNavigateToCarpetShowcase() },
+                .border(
+                    1.dp,
+                    LuxuryGold.copy(alpha = 0.5f),
+                    RoundedCornerShape(14.dp)
+                )
+                .clickable {
+                    onNavigateToCarpetShowcase()
+                },
             shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = CharcoalSurface)
+            colors = CardDefaults.cardColors(
+                containerColor = CharcoalSurface
+            )
         ) {
             Row(
                 modifier = Modifier
@@ -96,7 +101,10 @@ fun HomeScreen(
                 Box(
                     modifier = Modifier
                         .size(48.dp)
-                        .background(LuxuryGold.copy(alpha = 0.15f), RoundedCornerShape(10.dp)),
+                        .background(
+                            LuxuryGold.copy(alpha = 0.15f),
+                            RoundedCornerShape(10.dp)
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -109,15 +117,17 @@ fun HomeScreen(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text(
-                        text = "Persian Carpet Luxury Mode",
+                        text = "نمایش لوکس فرش ایرانی",
                         style = MaterialTheme.typography.titleLarge,
                         color = TextPrimary,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Kashan, Tabriz, Isfahan · Macro fiber & medallion showcase",
+                        text = "کاشان، تبریز، اصفهان · نمایش بافت و طرح فرش",
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
                     )
@@ -133,14 +143,14 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Photo Picker Action Buttons
         Text(
-            text = "Select Gallery Photos",
+            text = "انتخاب عکس از گالری",
             style = MaterialTheme.typography.titleLarge,
             color = TextPrimary
         )
+
         Text(
-            text = "Preserves original 4K/high-res color profiles without compression",
+            text = "حفظ رنگ و کیفیت اصلی عکس بدون فشرده سازی",
             style = MaterialTheme.typography.bodyMedium,
             color = TextMuted
         )
@@ -153,39 +163,54 @@ fun HomeScreen(
         ) {
             Button(
                 onClick = onLaunchSinglePicker,
-                modifier = Modifier.weight(1f).height(48.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp),
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = BrushedSlate,
                     contentColor = TextPrimary
                 )
             ) {
-                Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, modifier = Modifier.size(20.dp))
+                Icon(
+                    Icons.Default.AddPhotoAlternate,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Select Photo")
+
+                Text("انتخاب عکس")
             }
 
             Button(
                 onClick = onLaunchMultiPicker,
-                modifier = Modifier.weight(1f).height(48.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp),
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = BrushedSlate,
                     contentColor = TextPrimary
                 )
             ) {
-                Icon(Icons.Default.Collections, contentDescription = null, modifier = Modifier.size(20.dp))
+                Icon(
+                    Icons.Default.Collections,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Multi-Select")
+
+                Text("انتخاب چند عکس")
             }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Selected Photos Queue
         if (uiState.selectedPhotos.isNotEmpty()) {
             Text(
-                text = "Selected Gallery Images (${uiState.selectedPhotos.size})",
+                text = "عکس های انتخاب شده (${uiState.selectedPhotos.size})",
                 style = MaterialTheme.typography.titleLarge,
                 color = TextPrimary
             )
@@ -197,18 +222,29 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 items(uiState.selectedPhotos) { photo ->
-                    val isSelected = uiState.currentPhoto?.id == photo.id
+
+                    val isSelected =
+                        uiState.currentPhoto?.id == photo.id
+
                     Card(
                         modifier = Modifier
                             .size(130.dp, 160.dp)
                             .border(
                                 width = if (isSelected) 2.dp else 1.dp,
-                                color = if (isSelected) LuxuryGold else BorderSubtle,
+                                color =
+                                    if (isSelected)
+                                        LuxuryGold
+                                    else
+                                        BorderSubtle,
                                 shape = RoundedCornerShape(12.dp)
                             )
-                            .clickable { viewModel.selectPhoto(photo) },
+                            .clickable {
+                                viewModel.selectPhoto(photo)
+                            },
                         shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = CharcoalSurface)
+                        colors = CardDefaults.cardColors(
+                            containerColor = CharcoalSurface
+                        )
                     ) {
                         Column {
                             AsyncImage(
@@ -218,18 +254,31 @@ fun HomeScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(105.dp)
-                                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
+                                    .clip(
+                                        RoundedCornerShape(
+                                            topStart = 12.dp,
+                                            topEnd = 12.dp
+                                        )
+                                    )
                             )
-                            Column(modifier = Modifier.padding(8.dp)) {
+
+                            Column(
+                                modifier = Modifier.padding(8.dp)
+                            ) {
                                 Text(
                                     text = photo.name,
-                                    style = MaterialTheme.typography.labelSmall,
+                                    style =
+                                        MaterialTheme.typography.labelSmall,
                                     color = TextPrimary,
                                     maxLines = 1
                                 )
+
                                 Text(
-                                    text = "${photo.width} × ${photo.height} · ${photo.colorSpaceName}",
-                                    style = MaterialTheme.typography.labelSmall,
+                                    text =
+                                        "${photo.width} × ${photo.height} · " +
+                                                photo.colorSpaceName,
+                                    style =
+                                        MaterialTheme.typography.labelSmall,
                                     fontSize = 9.sp,
                                     color = LuxuryGold
                                 )
@@ -242,7 +291,6 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(30.dp))
 
-        // Proceed to Cinematic Editor Button
         Button(
             onClick = onNavigateToEditor,
             enabled = uiState.currentPhoto != null,
@@ -256,10 +304,15 @@ fun HomeScreen(
                 disabledContainerColor = BrushedSlate
             )
         ) {
-            Icon(Icons.Default.MovieFilter, contentDescription = null)
+            Icon(
+                Icons.Default.MovieFilter,
+                contentDescription = null
+            )
+
             Spacer(modifier = Modifier.width(10.dp))
+
             Text(
-                text = "Open Motion Editor & Preview",
+                text = "باز کردن ویرایشگر حرکت و پیش نمایش",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
