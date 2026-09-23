@@ -204,6 +204,12 @@ class MediaCodecVideoEncoder {
                     )
                 }
 
+            val surface =
+                inputSurface
+                    ?: throw RuntimeException(
+                        "سطح ورودی Encoder ایجاد نشد."
+                    )
+
             try {
                 encoder.start()
             } catch (e: Exception) {
@@ -228,7 +234,7 @@ class MediaCodecVideoEncoder {
                 Paint(
                     Paint.ANTI_ALIAS_FLAG
                 ).apply {
-                    style = Paint.Style.FILL
+                    setStyle(Paint.Style.FILL)
                 }
 
             for (
@@ -252,9 +258,9 @@ class MediaCodecVideoEncoder {
                         Build.VERSION.SDK_INT >=
                         Build.VERSION_CODES.M
                     ) {
-                        inputSurface.lockHardwareCanvas()
+                        surface.lockHardwareCanvas()
                     } else {
-                        inputSurface.lockCanvas(null)
+                        surface.lockCanvas(null)
                     }
 
                 try {
@@ -389,7 +395,7 @@ class MediaCodecVideoEncoder {
 
                 } finally {
 
-                    inputSurface.unlockCanvasAndPost(
+                    surface.unlockCanvasAndPost(
                         canvas
                     )
                 }
