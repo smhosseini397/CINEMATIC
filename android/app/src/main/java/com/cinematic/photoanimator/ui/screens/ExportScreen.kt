@@ -1,4 +1,3 @@
-```kotlin
 package com.cinematic.photoanimator.ui.screens
 
 import android.widget.Toast
@@ -54,7 +53,6 @@ fun ExportScreen(
         verticalArrangement = Arrangement.SpaceBetween
     ) {
 
-        // Top Bar
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -81,7 +79,6 @@ fun ExportScreen(
             )
         }
 
-        // Center Content
         Column(
             modifier = Modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -89,7 +86,6 @@ fun ExportScreen(
 
             if (!progress.isCompleted) {
 
-                // Rendering Gauge
                 Box(
                     modifier = Modifier.size(190.dp),
                     contentAlignment = Alignment.Center
@@ -123,7 +119,6 @@ fun ExportScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Statistics Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -240,7 +235,6 @@ fun ExportScreen(
 
             } else {
 
-                // Completed State
                 Box(
                     modifier = Modifier
                         .size(100.dp)
@@ -275,7 +269,6 @@ fun ExportScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Output Details
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -334,7 +327,6 @@ fun ExportScreen(
             }
         }
 
-        // Bottom Actions
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -447,4 +439,3 @@ fun ExportScreen(
         }
     }
 }
-```
