@@ -1,11 +1,5 @@
 package com.cinematic.photoanimator.ui.screens
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,6 +29,8 @@ import com.cinematic.photoanimator.data.model.VideoResolution
 import com.cinematic.photoanimator.motion.CinematicMotionEngine
 import com.cinematic.photoanimator.ui.theme.*
 import com.cinematic.photoanimator.ui.viewmodel.AnimatorViewModel
+import kotlinx.coroutines.isActive
+import androidx.compose.runtime.withFrameNanos
 
 @Composable
 fun EditorScreen(
@@ -45,30 +41,53 @@ fun EditorScreen(
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
 
-    val infiniteTransition =
-        rememberInfiniteTransition(label = "motion_preview")
+    /*
+     * Time Engine Preview
+     *
+     * Instead of relying on an infinite transition, the preview clock
+     * is driven directly from frame time. This guarantees that the
+     * CinematicMotionEngine receives continuously changing progress.
+     */
+    var previewProgress by remember {
+        mutableFloatStateOf(0f)
+    }
 
     val previewDurationMs =
-        (uiState.exportSettings.durationSeconds * 1000)
-            .coerceAtLeast(1000)
+        (uiState.exportSettings.durationSeconds * 1000L)
+            .coerceAtLeast(1000L)
 
-    val progress by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = previewDurationMs,
-                easing = LinearEasing
-            ),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "preview_progress"
-    )
+    LaunchedEffect(
+        uiState.currentPhoto?.id,
+        uiState.selectedMotionStyle,
+        uiState.exportSettings.durationSeconds,
+        uiState.exportSettings.orientation
+    ) {
+        previewProgress = 0f
+
+        var startTimeNanos = 0L
+
+        while (isActive) {
+            val frameTimeNanos = withFrameNanos { it }
+
+            if (startTimeNanos == 0L) {
+                startTimeNanos = frameTimeNanos
+            }
+
+            val elapsedMillis =
+                (frameTimeNanos - startTimeNanos) / 1_000_000L
+
+            previewProgress =
+                ((elapsedMillis % previewDurationMs).toFloat() /
+                        previewDurationMs.toFloat())
+                    .coerceIn(0f, 1f)
+        }
+    }
 
     val transform =
         CinematicMotionEngine.calculateTransform(
-            uiState.selectedMotionStyle,
-            progress
+            style = uiState.selectedMotionStyle,
+            progress = previewProgress,
+            aspectRatio = uiState.exportSettings.orientation.aspectRatio
         )
 
     Column(
@@ -140,6 +159,10 @@ fun EditorScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer {
+
+                            /*
+                             * 2D cinematic movement
+                             */
                             translationX =
                                 transform.translationX * size.width
 
@@ -150,6 +173,12 @@ fun EditorScreen(
                             scaleY = transform.scale
 
                             rotationZ = transform.rotationZ
+
+                            /*
+                             * 3D cinematic movement
+                             */
+                            rotationX = transform.tiltX
+                            rotationY = transform.tiltY
                         },
                     contentScale = ContentScale.Crop
                 )
@@ -199,13 +228,13 @@ fun EditorScreen(
             ) {
                 Text(
                     text =
-                        "${uiState.selectedMotionStyle.title} · " +
-                                "Zoom: ${
-                                    String.format(
-                                        "%.2f",
-                                        transform.scale
-                                    )
-                                }x · " +
+                        uiState.selectedMotionStyle.title +
+                                " · Zoom: " +
+                                String.format(
+                                    "%.2f",
+                                    transform.scale
+                                ) +
+                                "x · " +
                                 "${uiState.exportSettings.frameRate.fps} FPS",
                     style = MaterialTheme.typography.labelSmall,
                     color = TextPrimary
