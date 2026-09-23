@@ -101,7 +101,7 @@ class MediaCodecVideoEncoder {
         }
 
         val lightingPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.FILL
+            this.style = Paint.Style.FILL
         }
 
         try {
