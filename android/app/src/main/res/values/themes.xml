@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.CinematicPhotoAnimator" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@color/obsidian_black</item>
+        <item name="android:navigationBarColor">@color/obsidian_black</item>
+        <item name="android:windowBackground">@color/obsidian_black</item>
+    </style>
+</resources>

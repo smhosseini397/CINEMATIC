@@ -1,0 +1,349 @@
+package com.cinematic.photoanimator.ui.screens
+
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.cinematic.photoanimator.data.model.MotionStyle
+import com.cinematic.photoanimator.data.model.VideoFrameRate
+import com.cinematic.photoanimator.data.model.VideoResolution
+import com.cinematic.photoanimator.data.repository.PhotoRepositoryImpl
+import com.cinematic.photoanimator.motion.CinematicMotionEngine
+import com.cinematic.photoanimator.ui.theme.*
+import com.cinematic.photoanimator.ui.viewmodel.AnimatorViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+@Composable
+fun EditorScreen(
+    viewModel: AnimatorViewModel,
+    onNavigateBack: () -> Unit,
+    onStartExport: () -> Unit
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    val scrollState = rememberScrollState()
+
+    // 60 FPS continuous animation loop for preview
+    val infiniteTransition = rememberInfiniteTransition(label = "motion_preview")
+    val previewDurationMs = (uiState.exportSettings.durationSeconds * 1000)
+
+    val progress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(previewDurationMs, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "progress"
+    )
+
+    // Current camera transform computed by CinematicMotionEngine
+    val transform = remember(uiState.selectedMotionStyle, progress) {
+        CinematicMotionEngine.calculateTransform(uiState.selectedMotionStyle, progress)
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(ObsidianBlack)
+            .statusBarsPadding()
+            .verticalScroll(scrollState)
+            .padding(16.dp)
+    ) {
+        // Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onNavigateBack) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Column {
+                Text(
+                    text = "Cinematic Motion Studio",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "60 FPS Real-time Engine Preview",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = LuxuryGold
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 16:9 Viewport Preview with Live Camera Motion
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .clip(RoundedCornerShape(14.dp))
+                .border(1.dp, LuxuryGold.copy(alpha = 0.4f), RoundedCornerShape(14.dp))
+                .background(Color.Black),
+            contentAlignment = Alignment.Center
+        ) {
+            // Live rendering box with calculated transform
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val canvasWidth = size.width
+                val canvasHeight = size.height
+                val centerX = canvasWidth / 2f
+                val centerY = canvasHeight / 2f
+
+                drawIntoCanvas { canvas ->
+                    val native = canvas.nativeCanvas
+                    native.save()
+
+                    // Apply 60 FPS Cinematic Engine Transform
+                    native.translate(centerX + (transform.translationX * canvasWidth), centerY + (transform.translationY * canvasHeight))
+                    native.scale(transform.scale, transform.scale)
+                    native.rotate(transform.rotationZ)
+
+                    // Draw inner preview frame
+                    val paint = android.graphics.Paint().apply {
+                        color = android.graphics.Color.DKGRAY
+                        style = android.graphics.Paint.Style.STROKE
+                        strokeWidth = 2f
+                    }
+                    native.drawRect(-centerX * 0.9f, -centerY * 0.9f, centerX * 0.9f, centerY * 0.9f, paint)
+
+                    native.restore()
+                }
+            }
+
+            // HUD Overlay for camera metadata
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(12.dp)
+                    .background(Color.Black.copy(alpha = 0.65f), RoundedCornerShape(6.dp))
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${uiState.selectedMotionStyle.title} · Zoom: ${String.format("%.2f", transform.scale)}x · 60 FPS",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextPrimary
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Movement Style Selection
+        Text(
+            text = "Camera Movement Style",
+            style = MaterialTheme.typography.titleLarge,
+            color = TextPrimary,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            text = "Select high-end cinema camera motion profile",
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextMuted
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            MotionStyle.values().forEach { style ->
+                val isSelected = uiState.selectedMotionStyle == style
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(
+                            width = if (isSelected) 1.5.dp else 1.dp,
+                            color = if (isSelected) LuxuryGold else BorderSubtle,
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                        .clickable { viewModel.selectMotionStyle(style) },
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isSelected) BrushedSlate else CharcoalSurface
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = isSelected,
+                            onClick = { viewModel.selectMotionStyle(style) },
+                            colors = RadioButtonDefaults.colors(selectedColor = LuxuryGold)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = style.title,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontSize = 16.sp,
+                                color = if (isSelected) LuxuryGold else TextPrimary,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = style.description,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontSize = 12.sp,
+                                color = TextSecondary
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Duration Selection (5 sec, 10 sec, 15 sec)
+        Text(
+            text = "Video Duration",
+            style = MaterialTheme.typography.titleLarge,
+            color = TextPrimary,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            listOf(5, 10, 15).forEach { seconds ->
+                val isSelected = uiState.exportSettings.durationSeconds == seconds
+                Button(
+                    onClick = { viewModel.setDuration(seconds) },
+                    modifier = Modifier.weight(1f).height(46.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isSelected) LuxuryGold else BrushedSlate,
+                        contentColor = if (isSelected) ObsidianBlack else TextPrimary
+                    )
+                ) {
+                    Text("$seconds Sec", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Resolution & Frame Rate Controls
+        Text(
+            text = "Export Quality & Hardware Encoder",
+            style = MaterialTheme.typography.titleLarge,
+            color = TextPrimary,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Resolution
+            Button(
+                onClick = { viewModel.setResolution(VideoResolution.FHD_1080P) },
+                modifier = Modifier.weight(1f).height(44.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (uiState.exportSettings.resolution == VideoResolution.FHD_1080P) LuxuryGold else BrushedSlate,
+                    contentColor = if (uiState.exportSettings.resolution == VideoResolution.FHD_1080P) ObsidianBlack else TextPrimary
+                )
+            ) {
+                Text("1080p FHD")
+            }
+
+            Button(
+                onClick = { viewModel.setResolution(VideoResolution.UHD_4K) },
+                modifier = Modifier.weight(1f).height(44.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (uiState.exportSettings.resolution == VideoResolution.UHD_4K) LuxuryGold else BrushedSlate,
+                    contentColor = if (uiState.exportSettings.resolution == VideoResolution.UHD_4K) ObsidianBlack else TextPrimary
+                )
+            ) {
+                Text("4K UHD")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Button(
+                onClick = { viewModel.setFrameRate(VideoFrameRate.FPS_30) },
+                modifier = Modifier.weight(1f).height(44.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (uiState.exportSettings.frameRate == VideoFrameRate.FPS_30) LuxuryGold else BrushedSlate,
+                    contentColor = if (uiState.exportSettings.frameRate == VideoFrameRate.FPS_30) ObsidianBlack else TextPrimary
+                )
+            ) {
+                Text("30 FPS")
+            }
+
+            Button(
+                onClick = { viewModel.setFrameRate(VideoFrameRate.FPS_60) },
+                modifier = Modifier.weight(1f).height(44.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (uiState.exportSettings.frameRate == VideoFrameRate.FPS_60) LuxuryGold else BrushedSlate,
+                    contentColor = if (uiState.exportSettings.frameRate == VideoFrameRate.FPS_60) ObsidianBlack else TextPrimary
+                )
+            ) {
+                Text("60 FPS Smooth")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(30.dp))
+
+        // Render Action Button
+        Button(
+            onClick = onStartExport,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(54.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = LuxuryGold,
+                contentColor = ObsidianBlack
+            )
+        ) {
+            Icon(Icons.Default.Videocam, contentDescription = null)
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = "Render MP4 Video",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}

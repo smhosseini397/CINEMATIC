@@ -1,0 +1,6 @@
+{
+  "name": "Cinematic Photo Animator",
+  "description": "Native Android Studio project & cinematic video renderer for photos and luxury Persian carpets with MediaCodec H.264 hardware encoding, 60 FPS camera motion, and Clean Architecture.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
