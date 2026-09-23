@@ -1,4 +1,3 @@
-```kotlin
 package com.cinematic.photoanimator.encoder
 
 import android.graphics.Bitmap
@@ -32,16 +31,11 @@ class MediaCodecVideoEncoder {
 
         private const val I_FRAME_INTERVAL = 1
 
-        /**
-         * Checks if the device's hardware encoder supports
-         * 4K H.264 encoding in either landscape or portrait.
-         */
         fun is4KSupported(): Boolean {
             val codecList =
                 MediaCodecList(MediaCodecList.REGULAR_CODECS)
 
             for (info in codecList.codecInfos) {
-
                 if (!info.isEncoder) continue
 
                 try {
@@ -53,18 +47,11 @@ class MediaCodecVideoEncoder {
                             ?: continue
 
                     if (
-                        videoCaps.isSizeSupported(
-                            3840,
-                            2160
-                        ) ||
-                        videoCaps.isSizeSupported(
-                            2160,
-                            3840
-                        )
+                        videoCaps.isSizeSupported(3840, 2160) ||
+                        videoCaps.isSizeSupported(2160, 3840)
                     ) {
                         return true
                     }
-
                 } catch (ignored: Exception) {
                 }
             }
@@ -73,21 +60,6 @@ class MediaCodecVideoEncoder {
         }
     }
 
-    /**
-     * Encodes a video from a high-resolution bitmap
-     * with smooth cinematic motion transformations.
-     *
-     * Portrait:
-     * 1080p = 1080 x 1920
-     * 4K    = 2160 x 3840
-     *
-     * Landscape:
-     * 1080p = 1920 x 1080
-     * 4K    = 3840 x 2160
-     *
-     * Uses MediaCodec Surface input and MediaMuxer
-     * to generate a genuine MP4 video.
-     */
     suspend fun encodeVideo(
         sourceBitmap: Bitmap,
         style: MotionStyle,
@@ -96,16 +68,11 @@ class MediaCodecVideoEncoder {
         onProgress: (RenderProgress) -> Unit
     ) = withContext(Dispatchers.Default) {
 
-        // Use the final calculated output dimensions.
-        // This makes Portrait actually 9:16.
         val width = settings.outputWidth
         val height = settings.outputHeight
-
         val fps = settings.frameRate.fps
         val totalFrames = settings.totalFrames
-
-        val bitrate =
-            settings.resolution.defaultBitrate
+        val bitrate = settings.resolution.defaultBitrate
 
         val format =
             MediaFormat.createVideoFormat(
@@ -135,7 +102,6 @@ class MediaCodecVideoEncoder {
                     I_FRAME_INTERVAL
                 )
 
-                // High profile H.264
                 if (
                     Build.VERSION.SDK_INT >=
                     Build.VERSION_CODES.M
@@ -186,11 +152,10 @@ class MediaCodecVideoEncoder {
         val startTimeMs =
             System.currentTimeMillis()
 
-        // High quality bitmap rendering.
         val bitmapPaint =
             Paint(
                 Paint.ANTI_ALIAS_FLAG or
-                        Paint.FILTER_BITMAP_FLAG
+                    Paint.FILTER_BITMAP_FLAG
             ).apply {
                 isDither = true
             }
@@ -199,9 +164,6 @@ class MediaCodecVideoEncoder {
             Paint(
                 Paint.ANTI_ALIAS_FLAG
             ).apply {
-                // IMPORTANT:
-                // Explicit receiver avoids conflict with
-                // the MotionStyle parameter named "style".
                 this.style = Paint.Style.FILL
             }
 
@@ -214,8 +176,8 @@ class MediaCodecVideoEncoder {
 
                 val progressFraction =
                     frameIndex.toFloat() /
-                            (totalFrames - 1)
-                                .coerceAtLeast(1)
+                        (totalFrames - 1)
+                            .coerceAtLeast(1)
 
                 val transform =
                     CinematicMotionEngine
@@ -224,43 +186,24 @@ class MediaCodecVideoEncoder {
                             progressFraction
                         )
 
-                // Render frame onto MediaCodec input surface.
                 val canvas =
                     if (
                         Build.VERSION.SDK_INT >=
                         Build.VERSION_CODES.M
                     ) {
-                        inputSurface
-                            .lockHardwareCanvas()
+                        inputSurface.lockHardwareCanvas()
                     } else {
-                        inputSurface
-                            .lockCanvas(null)
+                        inputSurface.lockCanvas(null)
                     }
 
                 try {
 
-                    // Clear background.
-                    canvas.drawColor(
-                        Color.BLACK
-                    )
+                    canvas.drawColor(Color.BLACK)
 
-                    /*
-                     * Calculate transformation.
-                     *
-                     * The photo is FIT/CROPPED into the
-                     * selected output aspect ratio.
-                     *
-                     * It is NEVER stretched independently
-                     * in X and Y.
-                     */
-                    val matrix =
-                        Matrix()
+                    val matrix = Matrix()
 
-                    val centerX =
-                        width / 2f
-
-                    val centerY =
-                        height / 2f
+                    val centerX = width / 2f
+                    val centerY = height / 2f
 
                     val photoWidth =
                         sourceBitmap.width.toFloat()
@@ -268,11 +211,6 @@ class MediaCodecVideoEncoder {
                     val photoHeight =
                         sourceBitmap.height.toFloat()
 
-                    /*
-                     * Fill the entire output frame
-                     * while preserving the original
-                     * photo aspect ratio.
-                     */
                     val scaleFit =
                         max(
                             width / photoWidth,
@@ -295,27 +233,23 @@ class MediaCodecVideoEncoder {
 
                     matrix.postTranslate(
                         centerX +
-                                (
-                                    transform.translationX *
-                                            width
-                                ),
+                            (
+                                transform.translationX *
+                                    width
+                            ),
                         centerY +
-                                (
-                                    transform.translationY *
-                                            height
-                                )
+                            (
+                                transform.translationY *
+                                    height
+                            )
                     )
 
-                    // Draw original bitmap.
                     canvas.drawBitmap(
                         sourceBitmap,
                         matrix,
                         bitmapPaint
                     )
 
-                    /*
-                     * Optional studio lighting sweep.
-                     */
                     if (
                         transform.lightIntensity >
                         0.01f
@@ -323,42 +257,35 @@ class MediaCodecVideoEncoder {
 
                         val rad =
                             Math.toRadians(
-                                transform.lightAngle
-                                    .toDouble()
+                                transform.lightAngle.toDouble()
                             )
 
                         val lx =
                             centerX +
-                                    (
-                                        cos(rad).toFloat() *
-                                                centerX *
-                                                0.8f
-                                    )
+                                (
+                                    cos(rad).toFloat() *
+                                        centerX *
+                                        0.8f
+                                )
 
                         val ly =
                             centerY +
-                                    (
-                                        sin(rad).toFloat() *
-                                                centerY *
-                                                0.8f
-                                    )
+                                (
+                                    sin(rad).toFloat() *
+                                        centerY *
+                                        0.8f
+                                )
 
                         val lightRadius =
-                            max(
-                                width,
-                                height
-                            ) * 0.75f
+                            max(width, height) * 0.75f
 
                         val alpha =
                             (
                                 transform.lightIntensity *
-                                        255
+                                    255
                             )
                                 .toInt()
-                                .coerceIn(
-                                    0,
-                                    45
-                                )
+                                .coerceIn(0, 45)
 
                         lightingPaint.shader =
                             RadialGradient(
@@ -385,16 +312,9 @@ class MediaCodecVideoEncoder {
                     }
 
                 } finally {
-
-                    inputSurface
-                        .unlockCanvasAndPost(
-                            canvas
-                        )
+                    inputSurface.unlockCanvasAndPost(canvas)
                 }
 
-                /*
-                 * Drain encoder output buffers.
-                 */
                 drainEncoder(
                     encoder,
                     muxer,
@@ -410,21 +330,18 @@ class MediaCodecVideoEncoder {
                     }
                 )
 
-                /*
-                 * Report render progress.
-                 */
                 val elapsed =
                     System.currentTimeMillis() -
-                            startTimeMs
+                        startTimeMs
 
                 val framesRemaining =
                     totalFrames -
-                            (frameIndex + 1)
+                        (frameIndex + 1)
 
                 val avgTimePerFrame =
                     if (frameIndex > 0) {
                         elapsed.toFloat() /
-                                (frameIndex + 1)
+                            (frameIndex + 1)
                     } else {
                         25f
                     }
@@ -432,39 +349,28 @@ class MediaCodecVideoEncoder {
                 val remainingMs =
                     (
                         framesRemaining *
-                                avgTimePerFrame
+                            avgTimePerFrame
                     ).toLong()
 
                 onProgress(
                     RenderProgress(
                         isRendering = true,
                         isCompleted = false,
-                        currentFrame =
-                            frameIndex + 1,
-                        totalFrames =
-                            totalFrames,
+                        currentFrame = frameIndex + 1,
+                        totalFrames = totalFrames,
                         percentage =
                             (
-                                (frameIndex + 1)
-                                    .toFloat() /
-                                        totalFrames
+                                (frameIndex + 1).toFloat() /
+                                    totalFrames
                             ) * 100f,
-                        elapsedMillis =
-                            elapsed,
-                        estimatedRemainingMillis =
-                            remainingMs
+                        elapsedMillis = elapsed,
+                        estimatedRemainingMillis = remainingMs
                     )
                 )
             }
 
-            /*
-             * Signal End Of Stream.
-             */
             encoder.signalEndOfInputStream()
 
-            /*
-             * Drain remaining buffers including EOS.
-             */
             drainEncoder(
                 encoder,
                 muxer,
@@ -482,22 +388,18 @@ class MediaCodecVideoEncoder {
 
             val totalElapsed =
                 System.currentTimeMillis() -
-                        startTimeMs
+                    startTimeMs
 
             onProgress(
                 RenderProgress(
                     isRendering = false,
                     isCompleted = true,
-                    currentFrame =
-                        totalFrames,
-                    totalFrames =
-                        totalFrames,
+                    currentFrame = totalFrames,
+                    totalFrames = totalFrames,
                     percentage = 100f,
-                    elapsedMillis =
-                        totalElapsed,
+                    elapsedMillis = totalElapsed,
                     estimatedRemainingMillis = 0L,
-                    outputPath =
-                        outputFile.absolutePath
+                    outputPath = outputFile.absolutePath
                 )
             )
 
@@ -506,19 +408,14 @@ class MediaCodecVideoEncoder {
             try {
                 encoder.stop()
                 encoder.release()
-            } catch (
-                ignored: Exception
-            ) {
+            } catch (ignored: Exception) {
             }
 
             if (muxerStarted) {
-
                 try {
                     muxer.stop()
                     muxer.release()
-                } catch (
-                    ignored: Exception
-                ) {
+                } catch (ignored: Exception) {
                 }
             }
 
@@ -571,9 +468,7 @@ class MediaCodecVideoEncoder {
                     encoder.outputFormat
 
                 val track =
-                    muxer.addTrack(
-                        newFormat
-                    )
+                    muxer.addTrack(newFormat)
 
                 setTrackIndex(track)
 
@@ -591,14 +486,13 @@ class MediaCodecVideoEncoder {
                     )
                         ?: throw RuntimeException(
                             "EncoderOutputBuffer " +
-                                    "$encoderStatus was null"
+                                "$encoderStatus was null"
                         )
 
                 if (
                     (
                         bufferInfo.flags and
-                                MediaCodec
-                                    .BUFFER_FLAG_CODEC_CONFIG
+                            MediaCodec.BUFFER_FLAG_CODEC_CONFIG
                     ) != 0
                 ) {
                     bufferInfo.size = 0
@@ -615,7 +509,7 @@ class MediaCodecVideoEncoder {
 
                     encodedData.limit(
                         bufferInfo.offset +
-                                bufferInfo.size
+                            bufferInfo.size
                     )
 
                     muxer.writeSampleData(
@@ -633,8 +527,7 @@ class MediaCodecVideoEncoder {
                 if (
                     (
                         bufferInfo.flags and
-                                MediaCodec
-                                    .BUFFER_FLAG_END_OF_STREAM
+                            MediaCodec.BUFFER_FLAG_END_OF_STREAM
                     ) != 0
                 ) {
                     break
@@ -643,4 +536,3 @@ class MediaCodecVideoEncoder {
         }
     }
 }
-```
