@@ -1,12 +1,11 @@
+```kotlin
 package com.cinematic.photoanimator.encoder
 
 import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.RadialGradient
-import android.graphics.Rect
 import android.graphics.Shader
 import android.media.MediaCodec
 import android.media.MediaCodecInfo
@@ -14,8 +13,6 @@ import android.media.MediaCodecList
 import android.media.MediaFormat
 import android.media.MediaMuxer
 import android.os.Build
-import android.view.Surface
-import com.cinematic.photoanimator.data.model.CameraTransform
 import com.cinematic.photoanimator.data.model.ExportSettings
 import com.cinematic.photoanimator.data.model.MotionStyle
 import com.cinematic.photoanimator.data.model.RenderProgress
@@ -24,6 +21,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.math.cos
+import kotlin.math.max
 import kotlin.math.sin
 
 class MediaCodecVideoEncoder {
@@ -79,8 +77,6 @@ class MediaCodecVideoEncoder {
      * Encodes a video from a high-resolution bitmap
      * with smooth cinematic motion transformations.
      *
-     * Supports:
-     *
      * Portrait:
      * 1080p = 1080 x 1920
      * 4K    = 2160 x 3840
@@ -100,17 +96,13 @@ class MediaCodecVideoEncoder {
         onProgress: (RenderProgress) -> Unit
     ) = withContext(Dispatchers.Default) {
 
-        // IMPORTANT:
         // Use the final calculated output dimensions.
-        // This is what makes Portrait actually 9:16.
+        // This makes Portrait actually 9:16.
         val width = settings.outputWidth
         val height = settings.outputHeight
 
         val fps = settings.frameRate.fps
         val totalFrames = settings.totalFrames
-
-        val frameDurationUs =
-            1_000_000L / fps
 
         val bitrate =
             settings.resolution.defaultBitrate
@@ -144,7 +136,6 @@ class MediaCodecVideoEncoder {
                 )
 
                 // High profile H.264
-                // for maximum visual fidelity.
                 if (
                     Build.VERSION.SDK_INT >=
                     Build.VERSION_CODES.M
@@ -208,7 +199,10 @@ class MediaCodecVideoEncoder {
             Paint(
                 Paint.ANTI_ALIAS_FLAG
             ).apply {
-                style = Paint.Style.FILL
+                // IMPORTANT:
+                // Explicit receiver avoids conflict with
+                // the MotionStyle parameter named "style".
+                this.style = Paint.Style.FILL
             }
 
         try {
@@ -230,8 +224,7 @@ class MediaCodecVideoEncoder {
                             progressFraction
                         )
 
-                // Render frame onto
-                // MediaCodec input surface.
+                // Render frame onto MediaCodec input surface.
                 val canvas =
                     if (
                         Build.VERSION.SDK_INT >=
@@ -281,7 +274,7 @@ class MediaCodecVideoEncoder {
                      * photo aspect ratio.
                      */
                     val scaleFit =
-                        maxOf(
+                        max(
                             width / photoWidth,
                             height / photoHeight
                         )
@@ -306,7 +299,6 @@ class MediaCodecVideoEncoder {
                                     transform.translationX *
                                             width
                                 ),
-
                         centerY +
                                 (
                                     transform.translationY *
@@ -352,7 +344,7 @@ class MediaCodecVideoEncoder {
                                     )
 
                         val lightRadius =
-                            maxOf(
+                            max(
                                 width,
                                 height
                             ) * 0.75f
@@ -373,16 +365,13 @@ class MediaCodecVideoEncoder {
                                 lx,
                                 ly,
                                 lightRadius,
-
                                 Color.argb(
                                     alpha,
                                     255,
                                     250,
                                     240
                                 ),
-
                                 Color.TRANSPARENT,
-
                                 Shader.TileMode.CLAMP
                             )
 
@@ -454,17 +443,14 @@ class MediaCodecVideoEncoder {
                             frameIndex + 1,
                         totalFrames =
                             totalFrames,
-
                         percentage =
                             (
                                 (frameIndex + 1)
                                     .toFloat() /
                                         totalFrames
                             ) * 100f,
-
                         elapsedMillis =
                             elapsed,
-
                         estimatedRemainingMillis =
                             remainingMs
                     )
@@ -477,8 +463,7 @@ class MediaCodecVideoEncoder {
             encoder.signalEndOfInputStream()
 
             /*
-             * Drain remaining buffers
-             * including EOS.
+             * Drain remaining buffers including EOS.
              */
             drainEncoder(
                 encoder,
@@ -658,3 +643,4 @@ class MediaCodecVideoEncoder {
         }
     }
 }
+```
