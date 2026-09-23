@@ -6,48 +6,48 @@ enum class MotionStyle(
     val iconName: String
 ) {
     SLOW_ZOOM_IN(
-        "Slow Cinematic Zoom In",
-        "Gentle, filmic acceleration focusing into the emotional core at 60 FPS",
+        "زوم سینمایی آرام به داخل",
+        "حرکت نرم و سینمایی دوربین به سمت مرکز تصویر با شتابی ملایم و طبیعی",
         "zoom_in"
     ),
     SLOW_ZOOM_OUT(
-        "Slow Cinematic Zoom Out",
-        "Reveals the grand context and full borders with smooth cinematic deceleration",
+        "زوم سینمایی آرام به بیرون",
+        "عقب رفتن نرم دوربین برای نمایش کامل تصویر و حاشیه های آن",
         "zoom_out"
     ),
     KEN_BURNS(
-        "Ken Burns Dynamic",
-        "Signature documentary pan combined with subtle organic diagonal zoom",
+        "حرکت پویا به سبک کن برنز",
+        "حرکت مستندگونه دوربین همراه با زوم مورب و ظریف برای ایجاد حس طبیعی",
         "auto_awesome"
     ),
     SMOOTH_PAN_HORIZONTAL(
-        "Smooth Lateral Pan",
-        "Gliding horizontal camera dolly showcasing panoramic span without distortion",
+        "حرکت نرم افقی",
+        "حرکت روان دوربین از یک سمت به سمت دیگر برای نمایش گستره تصویر بدون تغییر شکل",
         "swap_horiz"
     ),
     VERTICAL_MOVEMENT(
-        "Vertical Camera Glide",
-        "Elevating camera movement from foreground texture to top crown",
+        "حرکت عمودی دوربین",
+        "حرکت نرم دوربین از جزئیات پایین تصویر به سمت بخش بالایی",
         "swap_vert"
     ),
     PARALLAX_3D(
-        "3D Parallax Depth",
-        "Multi-plane spatial depth displacement simulating high-end cinema prime lens",
+        "عمق سه بعدی پارالاکس",
+        "ایجاد عمق چند لایه و حرکت فضایی برای شبیه سازی جلوه سینمایی حرفه ای",
         "layers"
     ),
     DOCUMENTARY_DRIFT(
-        "Documentary Handheld Drift",
-        "Organic subtle camera breathe and natural harmonic movement",
+        "حرکت طبیعی مستند",
+        "حرکت بسیار ظریف و طبیعی دوربین با نوسان ملایم برای ایجاد حس تصویربرداری واقعی",
         "videocam"
     ),
     LUXURY_SHOWCASE(
-        "Luxury Product Showcase",
-        "Sweeping orbital curve with dynamic studio rim lighting shimmer",
+        "نمایش لوکس محصول",
+        "حرکت منحنی و گسترده دوربین با جلوه نورپردازی استودیویی برای نمایش حرفه ای محصول",
         "diamond"
     ),
     PERSIAN_CARPET_LUXURY(
-        "Persian Carpet Showcase",
-        "Macro focus across medallion, floral palmettes, border knotting & silk sheen",
+        "نمایش لوکس فرش ایرانی",
+        "حرکت سینمایی روی ترنج، گل های شاه عباسی، حاشیه و بافت ظریف فرش",
         "flare"
     )
 }
