@@ -26,6 +26,7 @@ import com.cinematic.photoanimator.data.model.MotionStyle
 import com.cinematic.photoanimator.data.model.VideoFrameRate
 import com.cinematic.photoanimator.data.model.VideoOrientation
 import com.cinematic.photoanimator.data.model.VideoResolution
+import com.cinematic.photoanimator.encoder.MediaCodecVideoEncoder
 import com.cinematic.photoanimator.motion.CinematicMotionEngine
 import com.cinematic.photoanimator.ui.theme.*
 import com.cinematic.photoanimator.ui.viewmodel.AnimatorViewModel
@@ -41,13 +42,15 @@ fun EditorScreen(
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
 
-    /*
-     * Time Engine Preview
-     *
-     * Instead of relying on an infinite transition, the preview clock
-     * is driven directly from frame time. This guarantees that the
-     * CinematicMotionEngine receives continuously changing progress.
-     */
+    val is4K =
+        uiState.exportSettings.resolution ==
+                VideoResolution.UHD_4K
+
+    val is4K60Supported =
+        remember {
+            MediaCodecVideoEncoder.is4K60Supported()
+        }
+
     var previewProgress by remember {
         mutableFloatStateOf(0f)
     }
@@ -67,19 +70,23 @@ fun EditorScreen(
         var startTimeNanos = 0L
 
         while (isActive) {
-            val frameTimeNanos = withFrameNanos { it }
+            val frameTimeNanos =
+                withFrameNanos { it }
 
             if (startTimeNanos == 0L) {
                 startTimeNanos = frameTimeNanos
             }
 
             val elapsedMillis =
-                (frameTimeNanos - startTimeNanos) / 1_000_000L
+                (frameTimeNanos - startTimeNanos) /
+                        1_000_000L
 
             previewProgress =
-                ((elapsedMillis % previewDurationMs).toFloat() /
-                        previewDurationMs.toFloat())
-                    .coerceIn(0f, 1f)
+                (
+                    (elapsedMillis % previewDurationMs)
+                        .toFloat() /
+                        previewDurationMs.toFloat()
+                ).coerceIn(0f, 1f)
         }
     }
 
@@ -87,7 +94,8 @@ fun EditorScreen(
         CinematicMotionEngine.calculateTransform(
             style = uiState.selectedMotionStyle,
             progress = previewProgress,
-            aspectRatio = uiState.exportSettings.orientation.aspectRatio
+            aspectRatio =
+                uiState.exportSettings.orientation.aspectRatio
         )
 
     Column(
@@ -159,24 +167,17 @@ fun EditorScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer {
-
-                            /*
-                             * 2D cinematic movement
-                             */
                             translationX =
-                                transform.translationX * size.width
+                                transform.translationX *
+                                        size.width
 
                             translationY =
-                                transform.translationY * size.height
+                                transform.translationY *
+                                        size.height
 
                             scaleX = transform.scale
                             scaleY = transform.scale
-
                             rotationZ = transform.rotationZ
-
-                            /*
-                             * 3D cinematic movement
-                             */
                             rotationX = transform.tiltX
                             rotationY = transform.tiltY
                         },
@@ -504,6 +505,15 @@ fun EditorScreen(
                     viewModel.setResolution(
                         VideoResolution.UHD_4K
                     )
+
+                    if (
+                        uiState.exportSettings.frameRate ==
+                        VideoFrameRate.FPS_60
+                    ) {
+                        viewModel.setFrameRate(
+                            VideoFrameRate.FPS_30
+                        )
+                    }
                 },
                 modifier = Modifier
                     .weight(1f)
@@ -573,10 +583,17 @@ fun EditorScreen(
 
             Button(
                 onClick = {
-                    viewModel.setFrameRate(
-                        VideoFrameRate.FPS_60
-                    )
+                    if (
+                        !is4K ||
+                        is4K60Supported
+                    ) {
+                        viewModel.setFrameRate(
+                            VideoFrameRate.FPS_60
+                        )
+                    }
                 },
+                enabled =
+                    !is4K || is4K60Supported,
                 modifier = Modifier
                     .weight(1f)
                     .height(44.dp),
@@ -597,10 +614,23 @@ fun EditorScreen(
                         )
                             ObsidianBlack
                         else
-                            TextPrimary
+                            TextPrimary,
+                    disabledContainerColor =
+                        BrushedSlate.copy(alpha = 0.45f),
+                    disabledContentColor =
+                        TextSecondary.copy(alpha = 0.6f)
                 )
             ) {
-                Text("60 FPS روان")
+                Text(
+                    if (
+                        is4K &&
+                        !is4K60Supported
+                    ) {
+                        "60 FPS در 4K پشتیبانی نمی شود"
+                    } else {
+                        "60 FPS روان"
+                    }
+                )
             }
         }
 
