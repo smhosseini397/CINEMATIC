@@ -68,7 +68,7 @@ fun ExportScreen(
         // Center Content: Gauge / Completion Card
         Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterVertically
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (!progress.isCompleted) {
                 // Active Hardware Encoding State
