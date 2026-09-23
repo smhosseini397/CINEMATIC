@@ -268,7 +268,7 @@ fun ExportScreen(
                     text = "Please keep app open while hardware encoder finishes frames",
                     style = MaterialTheme.typography.labelSmall,
                     color = TextMuted,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }
