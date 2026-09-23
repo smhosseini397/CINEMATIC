@@ -315,7 +315,7 @@ class AnimatorViewModel(
                         isSavedToGallery = false,
                         errorMessage =
                             error.localizedMessage
-                                ?: "Video rendering failed"
+                                ?: "ساخت ویدیو با خطا مواجه شد"
                     )
                 }
             }
@@ -348,7 +348,7 @@ class AnimatorViewModel(
 
                     it.copy(
                         errorMessage =
-                            "Could not save video to gallery"
+                            "ذخیره ویدیو در گالری امکان پذیر نبود"
                     )
                 }
             }
