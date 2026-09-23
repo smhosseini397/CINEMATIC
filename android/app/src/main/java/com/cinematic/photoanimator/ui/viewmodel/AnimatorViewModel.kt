@@ -182,13 +182,30 @@ class AnimatorViewModel(
 
         _uiState.update { state ->
 
+            val currentFrameRate =
+                state.exportSettings.frameRate
+
+            val safeFrameRate =
+                if (
+                    resolution ==
+                    VideoResolution.UHD_4K &&
+                    currentFrameRate ==
+                    VideoFrameRate.FPS_60
+                ) {
+                    VideoFrameRate.FPS_30
+                } else {
+                    currentFrameRate
+                }
+
             state.copy(
                 exportSettings =
                     state.exportSettings.copy(
-                        resolution = resolution
+                        resolution = resolution,
+                        frameRate = safeFrameRate
                     ),
                 lastExportedFile = null,
-                isSavedToGallery = false
+                isSavedToGallery = false,
+                errorMessage = null
             )
         }
     }
@@ -216,14 +233,40 @@ class AnimatorViewModel(
 
         _uiState.update { state ->
 
-            state.copy(
-                exportSettings =
-                    state.exportSettings.copy(
-                        frameRate = frameRate
-                    ),
-                lastExportedFile = null,
-                isSavedToGallery = false
-            )
+            val resolution =
+                state.exportSettings.resolution
+
+            if (
+                resolution ==
+                VideoResolution.UHD_4K &&
+                frameRate ==
+                VideoFrameRate.FPS_60
+            ) {
+
+                state.copy(
+                    errorMessage =
+                        if (
+                            MediaCodecVideoEncoder
+                                .is4K60Supported()
+                        ) {
+                            null
+                        } else {
+                            "خروجی 4K با 60 FPS توسط Encoder دستگاه پشتیبانی نمی شود. 30 FPS را انتخاب کنید."
+                        }
+                )
+
+            } else {
+
+                state.copy(
+                    exportSettings =
+                        state.exportSettings.copy(
+                            frameRate = frameRate
+                        ),
+                    lastExportedFile = null,
+                    isSavedToGallery = false,
+                    errorMessage = null
+                )
+            }
         }
     }
 
@@ -231,9 +274,9 @@ class AnimatorViewModel(
         type: CarpetType
     ) {
 
-        _uiState.update { state ->
+        _uiState.update {
 
-            state.copy(
+            it.copy(
                 carpetProfile =
                     CarpetShowcaseProfile(
                         carpetType = type
@@ -275,6 +318,35 @@ class AnimatorViewModel(
         val settings =
             _uiState.value.exportSettings
 
+        /*
+         * محافظ نهایی:
+         * هیچ رندر 4K/60 اجازه شروع ندارد مگر اینکه
+         * Encoder دستگاه واقعاً این حالت را پشتیبانی کند.
+         */
+        if (
+            settings.resolution ==
+            VideoResolution.UHD_4K &&
+            settings.frameRate ==
+            VideoFrameRate.FPS_60
+        ) {
+
+            if (
+                !MediaCodecVideoEncoder
+                    .is4K60Supported()
+            ) {
+
+                _uiState.update {
+
+                    it.copy(
+                        errorMessage =
+                            "خروجی 4K با 60 FPS توسط Encoder دستگاه پشتیبانی نمی شود. لطفاً 30 FPS را انتخاب کنید."
+                    )
+                }
+
+                return
+            }
+        }
+
         _uiState.update {
 
             it.copy(
@@ -286,27 +358,48 @@ class AnimatorViewModel(
 
         viewModelScope.launch {
 
-            val result =
-                exportManager.exportVideo(
-                    photo = photo,
-                    style = style,
-                    settings = settings
-                )
+            try {
 
-            result.onSuccess { file ->
-
-                _uiState.update {
-
-                    it.copy(
-                        lastExportedFile = file,
-                        isSavedToGallery = false,
-                        errorMessage = null
+                val result =
+                    exportManager.exportVideo(
+                        photo = photo,
+                        style = style,
+                        settings = settings
                     )
+
+                result.onSuccess { file ->
+
+                    _uiState.update {
+
+                        it.copy(
+                            lastExportedFile = file,
+                            isSavedToGallery = false,
+                            errorMessage = null
+                        )
+                    }
+
+                    onCompleted(file)
+
+                }.onFailure { error ->
+
+                    val message =
+                        error.localizedMessage
+                            ?.takeIf {
+                                it.isNotBlank()
+                            }
+                            ?: "ساخت ویدیو با خطا مواجه شد"
+
+                    _uiState.update {
+
+                        it.copy(
+                            lastExportedFile = null,
+                            isSavedToGallery = false,
+                            errorMessage = message
+                        )
+                    }
                 }
 
-                onCompleted(file)
-
-            }.onFailure { error ->
+            } catch (error: Exception) {
 
                 _uiState.update {
 
@@ -315,6 +408,9 @@ class AnimatorViewModel(
                         isSavedToGallery = false,
                         errorMessage =
                             error.localizedMessage
+                                ?.takeIf {
+                                    it.isNotBlank()
+                                }
                                 ?: "ساخت ویدیو با خطا مواجه شد"
                     )
                 }
@@ -330,25 +426,43 @@ class AnimatorViewModel(
 
         viewModelScope.launch {
 
-            val uri =
-                exportManager.saveToGallery(file)
+            try {
 
-            if (uri != null) {
+                val uri =
+                    exportManager.saveToGallery(file)
 
-                _uiState.update {
+                if (uri != null) {
 
-                    it.copy(
-                        isSavedToGallery = true
-                    )
+                    _uiState.update {
+
+                        it.copy(
+                            isSavedToGallery = true,
+                            errorMessage = null
+                        )
+                    }
+
+                } else {
+
+                    _uiState.update {
+
+                        it.copy(
+                            errorMessage =
+                                "ذخیره ویدیو در گالری امکان پذیر نبود"
+                        )
+                    }
                 }
 
-            } else {
+            } catch (error: Exception) {
 
                 _uiState.update {
 
                     it.copy(
                         errorMessage =
-                            "ذخیره ویدیو در گالری امکان پذیر نبود"
+                            error.localizedMessage
+                                ?.takeIf {
+                                    it.isNotBlank()
+                                }
+                                ?: "ذخیره ویدیو در گالری امکان پذیر نبود"
                     )
                 }
             }
