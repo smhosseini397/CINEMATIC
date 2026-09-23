@@ -13,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -46,19 +45,26 @@ fun PersianCarpetScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onNavigateBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = TextPrimary)
+                Icon(
+                    Icons.Default.ArrowBack,
+                    contentDescription = "بازگشت",
+                    tint = TextPrimary
+                )
             }
+
             Spacer(modifier = Modifier.width(8.dp))
+
             Column {
                 Text(
-                    text = "PERSIAN CARPET LUXURY",
+                    text = "نمایش لوکس فرش ایرانی",
                     style = MaterialTheme.typography.labelSmall,
                     color = LuxuryGold,
                     letterSpacing = 1.5.sp,
                     fontWeight = FontWeight.Bold
                 )
+
                 Text(
-                    text = "Product Photography Showcase",
+                    text = "استودیو عکاسی محصول",
                     style = MaterialTheme.typography.headlineMedium,
                     color = TextPrimary
                 )
@@ -71,9 +77,15 @@ fun PersianCarpetScreen(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .border(1.dp, LuxuryGold.copy(alpha = 0.6f), RoundedCornerShape(12.dp)),
+                .border(
+                    1.dp,
+                    LuxuryGold.copy(alpha = 0.6f),
+                    RoundedCornerShape(12.dp)
+                ),
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = CharcoalSurface)
+            colors = CardDefaults.cardColors(
+                containerColor = CharcoalSurface
+            )
         ) {
             Row(
                 modifier = Modifier.padding(14.dp),
@@ -85,17 +97,20 @@ fun PersianCarpetScreen(
                     tint = LuxuryGold,
                     modifier = Modifier.size(28.dp)
                 )
+
                 Spacer(modifier = Modifier.width(12.dp))
+
                 Column {
                     Text(
-                        text = "100% Color & Gamut Preservation Guarantee",
+                        text = "حفظ 100 درصدی رنگ و دامنه رنگی",
                         style = MaterialTheme.typography.titleLarge,
                         fontSize = 14.sp,
                         color = LuxuryGold,
                         fontWeight = FontWeight.Bold
                     )
+
                     Text(
-                        text = "Zero AI recoloring or saturation distortion. Preserves exact vegetable dyes, silk luster, and genuine wool tones for commercial product catalogs.",
+                        text = "بدون تغییر رنگ یا افزایش غیرطبیعی اشباع رنگ. رنگ واقعی الیاف، درخشش ابریشم و تناژ طبیعی پشم بدون تغییر حفظ می شود.",
                         style = MaterialTheme.typography.bodyMedium,
                         fontSize = 12.sp,
                         color = TextSecondary
@@ -108,7 +123,7 @@ fun PersianCarpetScreen(
 
         // Rug Type Selector
         Text(
-            text = "Select Master Rug Origin",
+            text = "انتخاب نوع و منشا فرش",
             style = MaterialTheme.typography.titleLarge,
             color = TextPrimary,
             fontWeight = FontWeight.SemiBold
@@ -116,9 +131,12 @@ fun PersianCarpetScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             CarpetType.values().forEach { carpetType ->
                 val isSelected = uiState.carpetProfile.carpetType == carpetType
+
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -127,13 +145,21 @@ fun PersianCarpetScreen(
                             color = if (isSelected) LuxuryGold else BorderSubtle,
                             shape = RoundedCornerShape(10.dp)
                         )
-                        .clickable { viewModel.selectCarpetType(carpetType) },
+                        .clickable {
+                            viewModel.selectCarpetType(carpetType)
+                        },
                     shape = RoundedCornerShape(10.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (isSelected) BrushedSlate else CharcoalSurface
+                        containerColor = if (isSelected) {
+                            BrushedSlate
+                        } else {
+                            CharcoalSurface
+                        }
                     )
                 ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
+                    Column(
+                        modifier = Modifier.padding(14.dp)
+                    ) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -143,16 +169,23 @@ fun PersianCarpetScreen(
                                 text = carpetType.displayName,
                                 style = MaterialTheme.typography.titleLarge,
                                 fontSize = 16.sp,
-                                color = if (isSelected) LuxuryGold else TextPrimary,
+                                color = if (isSelected) {
+                                    LuxuryGold
+                                } else {
+                                    TextPrimary
+                                },
                                 fontWeight = FontWeight.Bold
                             )
+
                             Text(
                                 text = carpetType.originCity,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = TextMuted
                             )
                         }
+
                         Spacer(modifier = Modifier.height(4.dp))
+
                         Text(
                             text = carpetType.characteristic,
                             style = MaterialTheme.typography.bodyMedium,
@@ -168,13 +201,14 @@ fun PersianCarpetScreen(
 
         // Macro Waypoints Focus Zones
         Text(
-            text = "Macro Focal Sequence",
+            text = "مراحل تمرکز روی جزئیات فرش",
             style = MaterialTheme.typography.titleLarge,
             color = TextPrimary,
             fontWeight = FontWeight.SemiBold
         )
+
         Text(
-            text = "Seamless 60 FPS trajectory across all 5 key physical rug zones",
+            text = "حرکت سینمایی با نرخ 60 فریم در ثانیه روی 5 بخش اصلی و فیزیکی فرش",
             style = MaterialTheme.typography.bodyMedium,
             color = TextMuted
         )
@@ -186,14 +220,20 @@ fun PersianCarpetScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp)
-                    .background(CharcoalSurface, RoundedCornerShape(8.dp))
+                    .background(
+                        CharcoalSurface,
+                        RoundedCornerShape(8.dp)
+                    )
                     .padding(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
                     modifier = Modifier
                         .size(24.dp)
-                        .background(LuxuryGold, RoundedCornerShape(12.dp)),
+                        .background(
+                            LuxuryGold,
+                            RoundedCornerShape(12.dp)
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -203,7 +243,9 @@ fun PersianCarpetScreen(
                         fontWeight = FontWeight.Bold
                     )
                 }
+
                 Spacer(modifier = Modifier.width(12.dp))
+
                 Column {
                     Text(
                         text = zone.name,
@@ -211,8 +253,9 @@ fun PersianCarpetScreen(
                         color = TextPrimary,
                         fontWeight = FontWeight.Medium
                     )
+
                     Text(
-                        text = "${zone.description} (Zoom ${zone.zoomLevel}x)",
+                        text = "${zone.description} (بزرگنمایی ${zone.zoomLevel} برابر)",
                         style = MaterialTheme.typography.bodyMedium,
                         fontSize = 11.sp,
                         color = TextMuted
@@ -227,7 +270,9 @@ fun PersianCarpetScreen(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(10.dp),
-            colors = CardDefaults.cardColors(containerColor = CharcoalSurface)
+            colors = CardDefaults.cardColors(
+                containerColor = CharcoalSurface
+            )
         ) {
             Row(
                 modifier = Modifier
@@ -236,16 +281,19 @@ fun PersianCarpetScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
                     Text(
-                        text = "Simulate Studio Grazing Lighting",
+                        text = "شبیه سازی نورپردازی سطح فرش",
                         style = MaterialTheme.typography.titleLarge,
                         fontSize = 15.sp,
                         color = TextPrimary,
                         fontWeight = FontWeight.SemiBold
                     )
+
                     Text(
-                        text = "Simulates soft studio lamp gliding across wool/silk pile texture without altering pigment RGB",
+                        text = "حرکت نرم نور استودیویی روی بافت پشم و ابریشم را شبیه سازی می کند، بدون تغییر رنگ اصلی فرش",
                         style = MaterialTheme.typography.bodyMedium,
                         fontSize = 11.sp,
                         color = TextSecondary
@@ -254,7 +302,9 @@ fun PersianCarpetScreen(
 
                 Switch(
                     checked = uiState.carpetProfile.enableFiberLightingGleam,
-                    onCheckedChange = { viewModel.toggleFiberLighting(it) },
+                    onCheckedChange = {
+                        viewModel.toggleFiberLighting(it)
+                    },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = LuxuryGold,
                         checkedTrackColor = BrushedSlate
@@ -268,7 +318,9 @@ fun PersianCarpetScreen(
         // Action Button: Start Persian Carpet Showcase Export
         Button(
             onClick = {
-                viewModel.selectMotionStyle(MotionStyle.PERSIAN_CARPET_LUXURY)
+                viewModel.selectMotionStyle(
+                    MotionStyle.PERSIAN_CARPET_LUXURY
+                )
                 onStartExport()
             },
             modifier = Modifier
@@ -280,10 +332,15 @@ fun PersianCarpetScreen(
                 contentColor = ObsidianBlack
             )
         ) {
-            Icon(Icons.Default.Flare, contentDescription = null)
+            Icon(
+                Icons.Default.Flare,
+                contentDescription = null
+            )
+
             Spacer(modifier = Modifier.width(10.dp))
+
             Text(
-                text = "Render Carpet Luxury Video",
+                text = "ساخت ویدیوی لوکس فرش",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
