@@ -26,37 +26,83 @@ import kotlin.math.sin
 class MediaCodecVideoEncoder {
 
     companion object {
+
         private const val MIME_TYPE =
             MediaFormat.MIMETYPE_VIDEO_AVC
 
         private const val I_FRAME_INTERVAL = 1
 
-        fun is4KSupported(): Boolean {
+        /**
+         * بررسی پشتیبانی از یک رزولوشن و نرخ فریم مشخص
+         */
+        fun isVideoSupported(
+            width: Int,
+            height: Int,
+            fps: Int
+        ): Boolean {
+
             val codecList =
-                MediaCodecList(MediaCodecList.REGULAR_CODECS)
+                MediaCodecList(
+                    MediaCodecList.REGULAR_CODECS
+                )
 
             for (info in codecList.codecInfos) {
+
                 if (!info.isEncoder) continue
 
                 try {
+
                     val caps =
-                        info.getCapabilitiesForType(MIME_TYPE)
+                        info.getCapabilitiesForType(
+                            MIME_TYPE
+                        )
 
                     val videoCaps =
                         caps.videoCapabilities
                             ?: continue
 
                     if (
-                        videoCaps.isSizeSupported(3840, 2160) ||
-                        videoCaps.isSizeSupported(2160, 3840)
+                        videoCaps.areSizeAndRateSupported(
+                            width,
+                            height,
+                            fps.toDouble()
+                        ) ||
+                        videoCaps.areSizeAndRateSupported(
+                            height,
+                            width,
+                            fps.toDouble()
+                        )
                     ) {
                         return true
                     }
+
                 } catch (ignored: Exception) {
                 }
             }
 
             return false
+        }
+
+        /**
+         * بررسی پشتیبانی از 4K
+         */
+        fun is4KSupported(): Boolean {
+            return isVideoSupported(
+                3840,
+                2160,
+                30
+            )
+        }
+
+        /**
+         * بررسی پشتیبانی از 4K با 60 فریم
+         */
+        fun is4K60Supported(): Boolean {
+            return isVideoSupported(
+                3840,
+                2160,
+                60
+            )
         }
     }
 
@@ -70,9 +116,29 @@ class MediaCodecVideoEncoder {
 
         val width = settings.outputWidth
         val height = settings.outputHeight
-        val fps = settings.frameRate.fps
+        val requestedFps = settings.frameRate.fps
         val totalFrames = settings.totalFrames
         val bitrate = settings.resolution.defaultBitrate
+
+        /*
+         * قبل از ساخت Encoder بررسی می کنیم که دستگاه
+         * واقعاً رزولوشن و FPS انتخاب شده را پشتیبانی می کند.
+         *
+         * این قسمت جلوی گیر کردن 4K/60 را می گیرد.
+         */
+        if (
+            !isVideoSupported(
+                width,
+                height,
+                requestedFps
+            )
+        ) {
+            throw IllegalArgumentException(
+                "این دستگاه از خروجی ${width}x${height} با نرخ $requestedFps فریم بر ثانیه پشتیبانی نمی کند."
+            )
+        }
+
+        val fps = requestedFps
 
         val format =
             MediaFormat.createVideoFormat(
@@ -102,40 +168,29 @@ class MediaCodecVideoEncoder {
                     I_FRAME_INTERVAL
                 )
 
-                if (
-                    Build.VERSION.SDK_INT >=
-                    Build.VERSION_CODES.M
-                ) {
-                    setInteger(
-                        MediaFormat.KEY_PROFILE,
-                        MediaCodecInfo.CodecProfileLevel
-                            .AVCProfileHigh
-                    )
-
-                    setInteger(
-                        MediaFormat.KEY_LEVEL,
-                        MediaCodecInfo.CodecProfileLevel
-                            .AVCLevel51
-                    )
-                }
+                /*
+                 * Profile و Level را عمداً به صورت اجباری
+                 * تعیین نمی کنیم.
+                 *
+                 * بعضی Encoderهای سخت افزاری با مقدار اجباری
+                 * High / Level 5.1 در بعضی حالت ها مشکل دارند.
+                 * اجازه می دهیم خود Encoder مقدار مناسب را انتخاب کند.
+                 */
             }
 
         val encoder =
-            MediaCodec.createEncoderByType(
-                MIME_TYPE
-            )
+            try {
+                MediaCodec.createEncoderByType(
+                    MIME_TYPE
+                )
+            } catch (e: Exception) {
+                throw RuntimeException(
+                    "امکان ایجاد Encoder ویدیو وجود ندارد.",
+                    e
+                )
+            }
 
-        encoder.configure(
-            format,
-            null,
-            null,
-            MediaCodec.CONFIGURE_FLAG_ENCODE
-        )
-
-        val inputSurface =
-            encoder.createInputSurface()
-
-        encoder.start()
+        var inputSurface: android.view.Surface? = null
 
         val muxer =
             MediaMuxer(
@@ -149,29 +204,62 @@ class MediaCodecVideoEncoder {
         val bufferInfo =
             MediaCodec.BufferInfo()
 
-        val startTimeMs =
-            System.currentTimeMillis()
-
-        val bitmapPaint =
-            Paint(
-                Paint.ANTI_ALIAS_FLAG or
-                    Paint.FILTER_BITMAP_FLAG
-            ).apply {
-                isDither = true
-            }
-
-        val lightingPaint =
-            Paint(
-                Paint.ANTI_ALIAS_FLAG
-            ).apply {
-                this.style = Paint.Style.FILL
-            }
-
         try {
 
+            try {
+                encoder.configure(
+                    format,
+                    null,
+                    null,
+                    MediaCodec.CONFIGURE_FLAG_ENCODE
+                )
+            } catch (e: Exception) {
+
+                throw RuntimeException(
+                    "Encoder برای خروجی ${width}x${height} با $fps FPS قابل تنظیم نیست.",
+                    e
+                )
+            }
+
+            inputSurface =
+                try {
+                    encoder.createInputSurface()
+                } catch (e: Exception) {
+                    throw RuntimeException(
+                        "امکان ایجاد سطح ورودی Encoder وجود ندارد.",
+                        e
+                    )
+                }
+
+            try {
+                encoder.start()
+            } catch (e: Exception) {
+                throw RuntimeException(
+                    "شروع Encoder برای خروجی ${width}x${height} با $fps FPS ناموفق بود.",
+                    e
+                )
+            }
+
+            val startTimeMs =
+                System.currentTimeMillis()
+
+            val bitmapPaint =
+                Paint(
+                    Paint.ANTI_ALIAS_FLAG or
+                        Paint.FILTER_BITMAP_FLAG
+                ).apply {
+                    isDither = true
+                }
+
+            val lightingPaint =
+                Paint(
+                    Paint.ANTI_ALIAS_FLAG
+                ).apply {
+                    this.style = Paint.Style.FILL
+                }
+
             for (
-                frameIndex in
-                0 until totalFrames
+                frameIndex in 0 until totalFrames
             ) {
 
                 val progressFraction =
@@ -198,12 +286,18 @@ class MediaCodecVideoEncoder {
 
                 try {
 
-                    canvas.drawColor(Color.BLACK)
+                    canvas.drawColor(
+                        Color.BLACK
+                    )
 
-                    val matrix = Matrix()
+                    val matrix =
+                        Matrix()
 
-                    val centerX = width / 2f
-                    val centerY = height / 2f
+                    val centerX =
+                        width / 2f
+
+                    val centerY =
+                        height / 2f
 
                     val photoWidth =
                         sourceBitmap.width.toFloat()
@@ -223,8 +317,10 @@ class MediaCodecVideoEncoder {
                     )
 
                     matrix.postScale(
-                        scaleFit * transform.scale,
-                        scaleFit * transform.scale
+                        scaleFit *
+                            transform.scale,
+                        scaleFit *
+                            transform.scale
                     )
 
                     matrix.postRotate(
@@ -257,7 +353,8 @@ class MediaCodecVideoEncoder {
 
                         val rad =
                             Math.toRadians(
-                                transform.lightAngle.toDouble()
+                                transform.lightAngle
+                                    .toDouble()
                             )
 
                         val lx =
@@ -277,7 +374,10 @@ class MediaCodecVideoEncoder {
                                 )
 
                         val lightRadius =
-                            max(width, height) * 0.75f
+                            max(
+                                width,
+                                height
+                            ) * 0.75f
 
                         val alpha =
                             (
@@ -285,7 +385,10 @@ class MediaCodecVideoEncoder {
                                     255
                             )
                                 .toInt()
-                                .coerceIn(0, 45)
+                                .coerceIn(
+                                    0,
+                                    45
+                                )
 
                         lightingPaint.shader =
                             RadialGradient(
@@ -312,7 +415,10 @@ class MediaCodecVideoEncoder {
                     }
 
                 } finally {
-                    inputSurface.unlockCanvasAndPost(canvas)
+
+                    inputSurface.unlockCanvasAndPost(
+                        canvas
+                    )
                 }
 
                 drainEncoder(
@@ -356,15 +462,20 @@ class MediaCodecVideoEncoder {
                     RenderProgress(
                         isRendering = true,
                         isCompleted = false,
-                        currentFrame = frameIndex + 1,
-                        totalFrames = totalFrames,
+                        currentFrame =
+                            frameIndex + 1,
+                        totalFrames =
+                            totalFrames,
                         percentage =
                             (
-                                (frameIndex + 1).toFloat() /
+                                (frameIndex + 1)
+                                    .toFloat() /
                                     totalFrames
                             ) * 100f,
-                        elapsedMillis = elapsed,
-                        estimatedRemainingMillis = remainingMs
+                        elapsedMillis =
+                            elapsed,
+                        estimatedRemainingMillis =
+                            remainingMs
                     )
                 )
             }
@@ -394,12 +505,17 @@ class MediaCodecVideoEncoder {
                 RenderProgress(
                     isRendering = false,
                     isCompleted = true,
-                    currentFrame = totalFrames,
-                    totalFrames = totalFrames,
+                    currentFrame =
+                        totalFrames,
+                    totalFrames =
+                        totalFrames,
                     percentage = 100f,
-                    elapsedMillis = totalElapsed,
-                    estimatedRemainingMillis = 0L,
-                    outputPath = outputFile.absolutePath
+                    elapsedMillis =
+                        totalElapsed,
+                    estimatedRemainingMillis =
+                        0L,
+                    outputPath =
+                        outputFile.absolutePath
                 )
             )
 
@@ -407,6 +523,10 @@ class MediaCodecVideoEncoder {
 
             try {
                 encoder.stop()
+            } catch (ignored: Exception) {
+            }
+
+            try {
                 encoder.release()
             } catch (ignored: Exception) {
             }
@@ -414,12 +534,19 @@ class MediaCodecVideoEncoder {
             if (muxerStarted) {
                 try {
                     muxer.stop()
-                    muxer.release()
                 } catch (ignored: Exception) {
                 }
             }
 
-            inputSurface.release()
+            try {
+                muxer.release()
+            } catch (ignored: Exception) {
+            }
+
+            try {
+                inputSurface?.release()
+            } catch (ignored: Exception) {
+            }
         }
     }
 
@@ -435,6 +562,8 @@ class MediaCodecVideoEncoder {
     ) {
 
         val timeoutUs = 10_000L
+
+        var noOutputCount = 0
 
         while (true) {
 
@@ -453,6 +582,20 @@ class MediaCodecVideoEncoder {
                     break
                 }
 
+                /*
+                 * اگر EOS به هر دلیل دریافت نشود،
+                 * برای همیشه در حلقه نمانیم.
+                 *
+                 * حدود 10 ثانیه فرصت می دهیم.
+                 */
+                noOutputCount++
+
+                if (noOutputCount > 1000) {
+                    throw RuntimeException(
+                        "Encoder در پایان رندر متوقف شد و سیگنال پایان دریافت نشد."
+                    )
+                }
+
             } else if (
                 encoderStatus ==
                 MediaCodec.INFO_OUTPUT_FORMAT_CHANGED
@@ -460,7 +603,7 @@ class MediaCodecVideoEncoder {
 
                 if (isMuxerStarted()) {
                     throw RuntimeException(
-                        "Format changed after muxer started"
+                        "فرمت Encoder بعد از شروع Muxer تغییر کرد."
                     )
                 }
 
@@ -468,7 +611,9 @@ class MediaCodecVideoEncoder {
                     encoder.outputFormat
 
                 val track =
-                    muxer.addTrack(newFormat)
+                    muxer.addTrack(
+                        newFormat
+                    )
 
                 setTrackIndex(track)
 
@@ -476,18 +621,20 @@ class MediaCodecVideoEncoder {
 
                 setMuxerStarted(true)
 
+                noOutputCount = 0
+
             } else if (
                 encoderStatus >= 0
             ) {
 
+                noOutputCount = 0
+
                 val encodedData =
                     encoder.getOutputBuffer(
                         encoderStatus
+                    ) ?: throw RuntimeException(
+                        "بافر خروجی Encoder خالی است."
                     )
-                        ?: throw RuntimeException(
-                            "EncoderOutputBuffer " +
-                                "$encoderStatus was null"
-                        )
 
                 if (
                     (
