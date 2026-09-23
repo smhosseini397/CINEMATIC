@@ -108,7 +108,7 @@ fun EditorScreen(
             ) {
                 Icon(
                     Icons.Default.ArrowBack,
-                    contentDescription = "Back",
+                    contentDescription = "بازگشت",
                     tint = TextPrimary
                 )
             }
@@ -117,14 +117,14 @@ fun EditorScreen(
 
             Column {
                 Text(
-                    text = "Cinematic Motion Studio",
+                    text = "استودیو حرکت سینمایی",
                     style = MaterialTheme.typography.titleLarge,
                     color = TextPrimary,
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
-                    text = "Time Engine Preview",
+                    text = "پیش نمایش موتور زمان",
                     style = MaterialTheme.typography.labelSmall,
                     color = LuxuryGold
                 )
@@ -155,7 +155,7 @@ fun EditorScreen(
 
                 AsyncImage(
                     model = photo.uri,
-                    contentDescription = "Preview",
+                    contentDescription = "پیش نمایش",
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer {
@@ -186,7 +186,7 @@ fun EditorScreen(
             } else {
 
                 Text(
-                    text = "No photo selected",
+                    text = "هیچ عکسی انتخاب نشده است",
                     color = TextMuted
                 )
             }
@@ -229,7 +229,7 @@ fun EditorScreen(
                 Text(
                     text =
                         uiState.selectedMotionStyle.title +
-                                " · Zoom: " +
+                                " · بزرگنمایی: " +
                                 String.format(
                                     "%.2f",
                                     transform.scale
@@ -245,14 +245,14 @@ fun EditorScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "Camera Movement Style",
+            text = "سبک حرکت دوربین",
             style = MaterialTheme.typography.titleLarge,
             color = TextPrimary,
             fontWeight = FontWeight.SemiBold
         )
 
         Text(
-            text = "Select high-end cinema camera motion profile",
+            text = "انتخاب الگوی حرفه ای حرکت دوربین سینمایی",
             style = MaterialTheme.typography.bodyMedium,
             color = TextMuted
         )
@@ -340,7 +340,7 @@ fun EditorScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Video Duration",
+            text = "مدت زمان ویدیو",
             style = MaterialTheme.typography.titleLarge,
             color = TextPrimary,
             fontWeight = FontWeight.SemiBold
@@ -380,7 +380,7 @@ fun EditorScreen(
                     )
                 ) {
                     Text(
-                        "$seconds Sec",
+                        "$seconds ثانیه",
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -390,14 +390,14 @@ fun EditorScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Text(
-            text = "Video Orientation",
+            text = "جهت ویدیو",
             style = MaterialTheme.typography.titleLarge,
             color = TextPrimary,
             fontWeight = FontWeight.SemiBold
         )
 
         Text(
-            text = "Choose the final video format",
+            text = "فرمت نهایی ویدیو را انتخاب کنید",
             style = MaterialTheme.typography.bodyMedium,
             color = TextMuted
         )
@@ -441,9 +441,9 @@ fun EditorScreen(
                                 orientation ==
                                 VideoOrientation.PORTRAIT
                             ) {
-                                "Portrait 9:16"
+                                "عمودی 9:16"
                             } else {
-                                "Landscape 16:9"
+                                "افقی 16:9"
                             },
                         fontWeight = FontWeight.Bold
                     )
@@ -454,7 +454,7 @@ fun EditorScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "Export Quality & Hardware Encoder",
+            text = "کیفیت خروجی و انکودر سخت افزاری",
             style = MaterialTheme.typography.titleLarge,
             color = TextPrimary,
             fontWeight = FontWeight.SemiBold
@@ -600,7 +600,7 @@ fun EditorScreen(
                             TextPrimary
                 )
             ) {
-                Text("60 FPS Smooth")
+                Text("60 FPS روان")
             }
         }
 
@@ -617,7 +617,7 @@ fun EditorScreen(
                 modifier = Modifier.padding(14.dp)
             ) {
                 Text(
-                    text = "Final Output",
+                    text = "خروجی نهایی",
                     style = MaterialTheme.typography.titleMedium,
                     color = LuxuryGold,
                     fontWeight = FontWeight.Bold
@@ -657,7 +657,7 @@ fun EditorScreen(
             Spacer(modifier = Modifier.width(10.dp))
 
             Text(
-                text = "Render MP4 Video",
+                text = "ساخت ویدیوی MP4",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
