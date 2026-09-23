@@ -1,7 +1,11 @@
 package com.cinematic.photoanimator.ui.screens
 
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.Canvas
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,19 +14,20 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.cinematic.photoanimator.data.model.MotionStyle
 import com.cinematic.photoanimator.data.model.VideoFrameRate
 import com.cinematic.photoanimator.data.model.VideoOrientation
@@ -38,12 +43,14 @@ fun EditorScreen(
     onStartExport: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
     val scrollState = rememberScrollState()
 
-    val infiniteTransition = rememberInfiniteTransition(label = "motion_preview")
+    val infiniteTransition =
+        rememberInfiniteTransition(label = "motion_preview")
+
     val previewDurationMs =
-        uiState.exportSettings.durationSeconds * 1000
+        (uiState.exportSettings.durationSeconds * 1000)
+            .coerceAtLeast(1000)
 
     val progress by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -55,18 +62,14 @@ fun EditorScreen(
             ),
             repeatMode = RepeatMode.Restart
         ),
-        label = "progress"
+        label = "preview_progress"
     )
 
-    val transform = remember(
-        uiState.selectedMotionStyle,
-        progress
-    ) {
+    val transform =
         CinematicMotionEngine.calculateTransform(
             uiState.selectedMotionStyle,
             progress
         )
-    }
 
     Column(
         modifier = Modifier
@@ -77,7 +80,6 @@ fun EditorScreen(
             .padding(16.dp)
     ) {
 
-        // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -103,7 +105,7 @@ fun EditorScreen(
                 )
 
                 Text(
-                    text = "60 FPS Real-time Engine Preview",
+                    text = "Time Engine Preview",
                     style = MaterialTheme.typography.labelSmall,
                     color = LuxuryGold
                 )
@@ -112,7 +114,6 @@ fun EditorScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Dynamic Preview
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -129,58 +130,38 @@ fun EditorScreen(
             contentAlignment = Alignment.Center
         ) {
 
-            Canvas(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                val canvasWidth = size.width
-                val canvasHeight = size.height
+            val photo = uiState.currentPhoto
 
-                val centerX = canvasWidth / 2f
-                val centerY = canvasHeight / 2f
+            if (photo != null) {
 
-                drawIntoCanvas { canvas ->
-                    val native = canvas.nativeCanvas
+                AsyncImage(
+                    model = photo.uri,
+                    contentDescription = "Preview",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            translationX =
+                                transform.translationX * size.width
 
-                    native.save()
+                            translationY =
+                                transform.translationY * size.height
 
-                    native.translate(
-                        centerX +
-                                (transform.translationX * canvasWidth),
-                        centerY +
-                                (transform.translationY * canvasHeight)
-                    )
+                            scaleX = transform.scale
+                            scaleY = transform.scale
 
-                    native.scale(
-                        transform.scale,
-                        transform.scale
-                    )
+                            rotationZ = transform.rotationZ
+                        },
+                    contentScale = ContentScale.Crop
+                )
 
-                    native.rotate(
-                        transform.rotationZ
-                    )
+            } else {
 
-                    val paint =
-                        android.graphics.Paint().apply {
-                            color =
-                                android.graphics.Color.DKGRAY
-                            style =
-                                android.graphics.Paint.Style.STROKE
-                            strokeWidth = 2f
-                        }
-
-                    native.drawRect(
-                        -centerX * 0.9f,
-                        -centerY * 0.9f,
-                        centerX * 0.9f,
-                        centerY * 0.9f,
-                        paint
-                    )
-
-                    native.restore()
-                }
+                Text(
+                    text = "No photo selected",
+                    color = TextMuted
+                )
             }
 
-            // Preview orientation label
             Row(
                 modifier = Modifier
                     .align(Alignment.TopStart)
@@ -195,14 +176,14 @@ fun EditorScreen(
                     )
             ) {
                 Text(
-                    text = uiState.exportSettings.orientation.shortLabel,
+                    text =
+                        uiState.exportSettings.orientation.shortLabel,
                     style = MaterialTheme.typography.labelSmall,
                     color = LuxuryGold,
                     fontWeight = FontWeight.Bold
                 )
             }
 
-            // HUD
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
@@ -214,8 +195,7 @@ fun EditorScreen(
                     .padding(
                         horizontal = 8.dp,
                         vertical = 4.dp
-                    ),
-                verticalAlignment = Alignment.CenterVertically
+                    )
             ) {
                 Text(
                     text =
@@ -227,7 +207,6 @@ fun EditorScreen(
                                     )
                                 }x · " +
                                 "${uiState.exportSettings.frameRate.fps} FPS",
-
                     style = MaterialTheme.typography.labelSmall,
                     color = TextPrimary
                 )
@@ -236,7 +215,6 @@ fun EditorScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Camera Movement Style
         Text(
             text = "Camera Movement Style",
             style = MaterialTheme.typography.titleLarge,
@@ -265,24 +243,18 @@ fun EditorScreen(
                         .fillMaxWidth()
                         .border(
                             width =
-                                if (isSelected) 1.5.dp
-                                else 1.dp,
-
+                                if (isSelected) 1.5.dp else 1.dp,
                             color =
                                 if (isSelected)
                                     LuxuryGold
                                 else
                                     BorderSubtle,
-
-                            shape =
-                                RoundedCornerShape(10.dp)
+                            shape = RoundedCornerShape(10.dp)
                         )
                         .clickable {
                             viewModel.selectMotionStyle(style)
                         },
-
                     shape = RoundedCornerShape(10.dp),
-
                     colors = CardDefaults.cardColors(
                         containerColor =
                             if (isSelected)
@@ -291,11 +263,9 @@ fun EditorScreen(
                                 CharcoalSurface
                     )
                 ) {
-
                     Row(
                         modifier = Modifier.padding(14.dp),
-                        verticalAlignment =
-                            Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
 
                         RadioButton(
@@ -312,7 +282,6 @@ fun EditorScreen(
                         Spacer(modifier = Modifier.width(8.dp))
 
                         Column {
-
                             Text(
                                 text = style.title,
                                 style =
@@ -323,8 +292,7 @@ fun EditorScreen(
                                         LuxuryGold
                                     else
                                         TextPrimary,
-                                fontWeight =
-                                    FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold
                             )
 
                             Text(
@@ -342,7 +310,6 @@ fun EditorScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Duration
         Text(
             text = "Video Duration",
             style = MaterialTheme.typography.titleLarge,
@@ -354,41 +321,34 @@ fun EditorScreen(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement =
-                Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
 
             listOf(5, 10, 15).forEach { seconds ->
 
                 val isSelected =
-                    uiState.exportSettings.durationSeconds ==
-                            seconds
+                    uiState.exportSettings.durationSeconds == seconds
 
                 Button(
                     onClick = {
                         viewModel.setDuration(seconds)
                     },
-
                     modifier = Modifier
                         .weight(1f)
                         .height(46.dp),
-
                     shape = RoundedCornerShape(8.dp),
-
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor =
-                                if (isSelected)
-                                    LuxuryGold
-                                else
-                                    BrushedSlate,
-
-                            contentColor =
-                                if (isSelected)
-                                    ObsidianBlack
-                                else
-                                    TextPrimary
-                        )
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor =
+                            if (isSelected)
+                                LuxuryGold
+                            else
+                                BrushedSlate,
+                        contentColor =
+                            if (isSelected)
+                                ObsidianBlack
+                            else
+                                TextPrimary
+                    )
                 ) {
                     Text(
                         "$seconds Sec",
@@ -400,7 +360,6 @@ fun EditorScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Video Orientation
         Text(
             text = "Video Orientation",
             style = MaterialTheme.typography.titleLarge,
@@ -418,43 +377,34 @@ fun EditorScreen(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement =
-                Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
 
             VideoOrientation.values().forEach { orientation ->
 
                 val isSelected =
-                    uiState.exportSettings.orientation ==
-                            orientation
+                    uiState.exportSettings.orientation == orientation
 
                 Button(
                     onClick = {
-                        viewModel.setOrientation(
-                            orientation
-                        )
+                        viewModel.setOrientation(orientation)
                     },
-
                     modifier = Modifier
                         .weight(1f)
                         .height(50.dp),
-
                     shape = RoundedCornerShape(8.dp),
-
-                    colors =
-                        ButtonDefaults.buttonColors(
-                            containerColor =
-                                if (isSelected)
-                                    LuxuryGold
-                                else
-                                    BrushedSlate,
-
-                            contentColor =
-                                if (isSelected)
-                                    ObsidianBlack
-                                else
-                                    TextPrimary
-                        )
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor =
+                            if (isSelected)
+                                LuxuryGold
+                            else
+                                BrushedSlate,
+                        contentColor =
+                            if (isSelected)
+                                ObsidianBlack
+                            else
+                                TextPrimary
+                    )
                 ) {
                     Text(
                         text =
@@ -474,7 +424,6 @@ fun EditorScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Resolution
         Text(
             text = "Export Quality & Hardware Encoder",
             style = MaterialTheme.typography.titleLarge,
@@ -486,8 +435,7 @@ fun EditorScreen(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement =
-                Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
 
             Button(
@@ -496,33 +444,28 @@ fun EditorScreen(
                         VideoResolution.FHD_1080P
                     )
                 },
-
                 modifier = Modifier
                     .weight(1f)
                     .height(44.dp),
-
                 shape = RoundedCornerShape(8.dp),
-
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor =
-                            if (
-                                uiState.exportSettings.resolution ==
-                                VideoResolution.FHD_1080P
-                            )
-                                LuxuryGold
-                            else
-                                BrushedSlate,
-
-                        contentColor =
-                            if (
-                                uiState.exportSettings.resolution ==
-                                VideoResolution.FHD_1080P
-                            )
-                                ObsidianBlack
-                            else
-                                TextPrimary
-                    )
+                colors = ButtonDefaults.buttonColors(
+                    containerColor =
+                        if (
+                            uiState.exportSettings.resolution ==
+                            VideoResolution.FHD_1080P
+                        )
+                            LuxuryGold
+                        else
+                            BrushedSlate,
+                    contentColor =
+                        if (
+                            uiState.exportSettings.resolution ==
+                            VideoResolution.FHD_1080P
+                        )
+                            ObsidianBlack
+                        else
+                            TextPrimary
+                )
             ) {
                 Text("1080p FHD")
             }
@@ -533,33 +476,28 @@ fun EditorScreen(
                         VideoResolution.UHD_4K
                     )
                 },
-
                 modifier = Modifier
                     .weight(1f)
                     .height(44.dp),
-
                 shape = RoundedCornerShape(8.dp),
-
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor =
-                            if (
-                                uiState.exportSettings.resolution ==
-                                VideoResolution.UHD_4K
-                            )
-                                LuxuryGold
-                            else
-                                BrushedSlate,
-
-                        contentColor =
-                            if (
-                                uiState.exportSettings.resolution ==
-                                VideoResolution.UHD_4K
-                            )
-                                ObsidianBlack
-                            else
-                                TextPrimary
-                    )
+                colors = ButtonDefaults.buttonColors(
+                    containerColor =
+                        if (
+                            uiState.exportSettings.resolution ==
+                            VideoResolution.UHD_4K
+                        )
+                            LuxuryGold
+                        else
+                            BrushedSlate,
+                    contentColor =
+                        if (
+                            uiState.exportSettings.resolution ==
+                            VideoResolution.UHD_4K
+                        )
+                            ObsidianBlack
+                        else
+                            TextPrimary
+                )
             ) {
                 Text("4K UHD")
             }
@@ -567,11 +505,9 @@ fun EditorScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Frame Rate
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement =
-                Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
 
             Button(
@@ -580,33 +516,28 @@ fun EditorScreen(
                         VideoFrameRate.FPS_30
                     )
                 },
-
                 modifier = Modifier
                     .weight(1f)
                     .height(44.dp),
-
                 shape = RoundedCornerShape(8.dp),
-
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor =
-                            if (
-                                uiState.exportSettings.frameRate ==
-                                VideoFrameRate.FPS_30
-                            )
-                                LuxuryGold
-                            else
-                                BrushedSlate,
-
-                        contentColor =
-                            if (
-                                uiState.exportSettings.frameRate ==
-                                VideoFrameRate.FPS_30
-                            )
-                                ObsidianBlack
-                            else
-                                TextPrimary
-                    )
+                colors = ButtonDefaults.buttonColors(
+                    containerColor =
+                        if (
+                            uiState.exportSettings.frameRate ==
+                            VideoFrameRate.FPS_30
+                        )
+                            LuxuryGold
+                        else
+                            BrushedSlate,
+                    contentColor =
+                        if (
+                            uiState.exportSettings.frameRate ==
+                            VideoFrameRate.FPS_30
+                        )
+                            ObsidianBlack
+                        else
+                            TextPrimary
+                )
             ) {
                 Text("30 FPS")
             }
@@ -617,33 +548,28 @@ fun EditorScreen(
                         VideoFrameRate.FPS_60
                     )
                 },
-
                 modifier = Modifier
                     .weight(1f)
                     .height(44.dp),
-
                 shape = RoundedCornerShape(8.dp),
-
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor =
-                            if (
-                                uiState.exportSettings.frameRate ==
-                                VideoFrameRate.FPS_60
-                            )
-                                LuxuryGold
-                            else
-                                BrushedSlate,
-
-                        contentColor =
-                            if (
-                                uiState.exportSettings.frameRate ==
-                                VideoFrameRate.FPS_60
-                            )
-                                ObsidianBlack
-                            else
-                                TextPrimary
-                    )
+                colors = ButtonDefaults.buttonColors(
+                    containerColor =
+                        if (
+                            uiState.exportSettings.frameRate ==
+                            VideoFrameRate.FPS_60
+                        )
+                            LuxuryGold
+                        else
+                            BrushedSlate,
+                    contentColor =
+                        if (
+                            uiState.exportSettings.frameRate ==
+                            VideoFrameRate.FPS_60
+                        )
+                            ObsidianBlack
+                        else
+                            TextPrimary
+                )
             ) {
                 Text("60 FPS Smooth")
             }
@@ -651,7 +577,6 @@ fun EditorScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Output Dimensions
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(10.dp),
@@ -659,11 +584,9 @@ fun EditorScreen(
                 containerColor = CharcoalSurface
             )
         ) {
-
             Column(
                 modifier = Modifier.padding(14.dp)
             ) {
-
                 Text(
                     text = "Final Output",
                     style = MaterialTheme.typography.titleMedium,
@@ -678,7 +601,6 @@ fun EditorScreen(
                         "${uiState.exportSettings.outputWidth} × " +
                                 "${uiState.exportSettings.outputHeight}  •  " +
                                 uiState.exportSettings.orientation.shortLabel,
-
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextPrimary
                 )
@@ -687,23 +609,17 @@ fun EditorScreen(
 
         Spacer(modifier = Modifier.height(30.dp))
 
-        // Render
         Button(
             onClick = onStartExport,
-
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp),
-
             shape = RoundedCornerShape(12.dp),
-
-            colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = LuxuryGold,
-                    contentColor = ObsidianBlack
-                )
+            colors = ButtonDefaults.buttonColors(
+                containerColor = LuxuryGold,
+                contentColor = ObsidianBlack
+            )
         ) {
-
             Icon(
                 Icons.Default.Videocam,
                 contentDescription = null
@@ -713,8 +629,7 @@ fun EditorScreen(
 
             Text(
                 text = "Render MP4 Video",
-                style =
-                    MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
         }
