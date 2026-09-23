@@ -55,7 +55,7 @@ class PhotoRepositoryImpl(private val context: Context) : PhotoRepository {
             BitmapFactory.decodeStream(stream, null, options)
         }
 
-        // Calculate sample size preserving maximum fidelity without memory exhaustion
+        // محاسبه اندازه نمونه برای حفظ بیشترین کیفیت بدون مصرف بیش از حد حافظه
         var sampleSize = 1
         val rawWidth = options.outWidth
         val rawHeight = options.outHeight
@@ -71,18 +71,20 @@ class PhotoRepositoryImpl(private val context: Context) : PhotoRepository {
         val decodeOptions = BitmapFactory.Options().apply {
             inSampleSize = sampleSize
             inPreferredConfig = Bitmap.Config.ARGB_8888
-            // Strictly preserve original color gamut without automatic clipping or tone curve alteration
+
+            // حفظ فضای رنگی اصلی بدون تغییر غیرضروری در تونالیته تصویر
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                 inPreferredColorSpace = ColorSpace.get(ColorSpace.Named.SRGB)
             }
+
             inPremultiplied = true
         }
 
         val rawBitmap = context.contentResolver.openInputStream(uri)?.use { stream ->
             BitmapFactory.decodeStream(stream, null, decodeOptions)
-        } ?: throw IllegalArgumentException("Could not decode bitmap from URI: $uri")
+        } ?: throw IllegalArgumentException("امکان خواندن تصویر از URI وجود ندارد: $uri")
 
-        // Read EXIF orientation to ensure correct portrait/landscape alignment without distorting pixels
+        // خواندن جهت EXIF برای نمایش صحیح تصویر بدون تغییر نسبت و کشیدگی پیکسل ها
         val rotation = getExifOrientation(uri)
         if (rotation != 0) {
             val matrix = android.graphics.Matrix().apply {
@@ -106,7 +108,12 @@ class PhotoRepositoryImpl(private val context: Context) : PhotoRepository {
         return try {
             context.contentResolver.openInputStream(uri)?.use { stream ->
                 val exif = ExifInterface(stream)
-                when (exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
+                when (
+                    exif.getAttributeInt(
+                        ExifInterface.TAG_ORIENTATION,
+                        ExifInterface.ORIENTATION_NORMAL
+                    )
+                ) {
                     ExifInterface.ORIENTATION_ROTATE_90 -> 90
                     ExifInterface.ORIENTATION_ROTATE_180 -> 180
                     ExifInterface.ORIENTATION_ROTATE_270 -> 270
@@ -123,7 +130,7 @@ class PhotoRepositoryImpl(private val context: Context) : PhotoRepository {
             PhotoItem(
                 id = "sample_kashan",
                 uri = Uri.parse("android.resource://${context.packageName}/drawable/sample_kashan"),
-                name = "Kashan Royal Medallion",
+                name = "فرش سلطنتی کاشان با ترنج",
                 width = 3840,
                 height = 2560,
                 colorSpaceName = "sRGB Authentic",
@@ -133,7 +140,7 @@ class PhotoRepositoryImpl(private val context: Context) : PhotoRepository {
             PhotoItem(
                 id = "sample_tabriz",
                 uri = Uri.parse("android.resource://${context.packageName}/drawable/sample_tabriz"),
-                name = "Tabriz Silk 70-Raj Masterpiece",
+                name = "فرش ابریشمی تبریز ۷۰ رج",
                 width = 3840,
                 height = 2560,
                 colorSpaceName = "sRGB Authentic",
@@ -143,7 +150,7 @@ class PhotoRepositoryImpl(private val context: Context) : PhotoRepository {
             PhotoItem(
                 id = "sample_isnfahan",
                 uri = Uri.parse("android.resource://${context.packageName}/drawable/sample_isnfahan"),
-                name = "Isfahan Sheikh Lotfollah Ceiling Motif",
+                name = "فرش اصفهان با طرح سقف شیخ لطف الله",
                 width = 3840,
                 height = 2560,
                 colorSpaceName = "sRGB Authentic",
@@ -153,7 +160,7 @@ class PhotoRepositoryImpl(private val context: Context) : PhotoRepository {
             PhotoItem(
                 id = "sample_nain",
                 uri = Uri.parse("android.resource://${context.packageName}/drawable/sample_nain"),
-                name = "Nain Habibian Ivory & Sapphire",
+                name = "فرش نایین حبیبیان با رنگ عاجی و یاقوتی",
                 width = 3840,
                 height = 2560,
                 colorSpaceName = "sRGB Authentic",
@@ -163,7 +170,7 @@ class PhotoRepositoryImpl(private val context: Context) : PhotoRepository {
             PhotoItem(
                 id = "sample_qom",
                 uri = Uri.parse("android.resource://${context.packageName}/drawable/sample_qom"),
-                name = "Qom 100% Pure Mulberry Silk Tree of Life",
+                name = "فرش قم با ابریشم خالص و طرح درخت زندگی",
                 width = 3840,
                 height = 2560,
                 colorSpaceName = "sRGB Authentic",
