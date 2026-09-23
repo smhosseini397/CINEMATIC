@@ -58,7 +58,7 @@ fun ExportScreen(
             IconButton(onClick = onNavigateHome) {
                 Icon(
                     Icons.Default.Close,
-                    contentDescription = "Close",
+                    contentDescription = "بستن",
                     tint = TextPrimary
                 )
             }
@@ -67,9 +67,9 @@ fun ExportScreen(
 
             Text(
                 text = if (progress.isCompleted) {
-                    "Video Ready"
+                    "ویدیو آماده است"
                 } else {
-                    "MediaCodec Rendering"
+                    "در حال ساخت ویدیو"
                 },
                 style = MaterialTheme.typography.titleLarge,
                 color = TextPrimary,
@@ -108,7 +108,7 @@ fun ExportScreen(
                         )
 
                         Text(
-                            text = "Frame ${progress.currentFrame} / ${progress.totalFrames}",
+                            text = "فریم ${progress.currentFrame} از ${progress.totalFrames}",
                             style = MaterialTheme.typography.labelSmall,
                             color = TextSecondary
                         )
@@ -134,7 +134,7 @@ fun ExportScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                "Estimated Remaining Time",
+                                "زمان تقریبی باقی مانده",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = TextMuted
                             )
@@ -162,13 +162,13 @@ fun ExportScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                "Encoder",
+                                "انکودر",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = TextMuted
                             )
 
                             Text(
-                                "MediaCodec H.264 Hardware Acceleration",
+                                "MediaCodec H.264 با شتاب سخت افزاری",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = SuccessGreen
                             )
@@ -179,15 +179,15 @@ fun ExportScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                "Orientation",
+                                "جهت ویدیو",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = TextMuted
                             )
 
                             Text(
                                 when (orientation) {
-                                    VideoOrientation.PORTRAIT -> "Portrait 9:16"
-                                    VideoOrientation.LANDSCAPE -> "Landscape 16:9"
+                                    VideoOrientation.PORTRAIT -> "عمودی 9:16"
+                                    VideoOrientation.LANDSCAPE -> "افقی 16:9"
                                 },
                                 style = MaterialTheme.typography.labelSmall,
                                 color = LuxuryGold,
@@ -200,7 +200,7 @@ fun ExportScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                "Output Specs",
+                                "مشخصات خروجی",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = TextMuted
                             )
@@ -217,7 +217,7 @@ fun ExportScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                "Format",
+                                "فرمت",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = TextMuted
                             )
@@ -253,14 +253,14 @@ fun ExportScreen(
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Text(
-                    text = "Cinematic Master Encoded!",
+                    text = "ویدیوی سینمایی آماده شد!",
                     style = MaterialTheme.typography.headlineMedium,
                     color = TextPrimary,
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
-                    text = "Export completed with authentic color preservation",
+                    text = "خروجی با حفظ رنگ و کیفیت اصلی تصویر تکمیل شد",
                     style = MaterialTheme.typography.bodyLarge,
                     color = TextSecondary
                 )
@@ -280,23 +280,23 @@ fun ExportScreen(
                     ) {
 
                         Text(
-                            text = "Output Details",
+                            text = "جزئیات خروجی",
                             style = MaterialTheme.typography.titleLarge,
                             fontSize = 14.sp,
                             color = LuxuryGold
                         )
 
                         Text(
-                            text = "Format: MP4 (H.264 High Profile / $fps FPS)",
+                            text = "فرمت: MP4 (H.264 High Profile / $fps FPS)",
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextPrimary
                         )
 
                         Text(
-                            text = "Orientation: ${
+                            text = "جهت: ${
                                 when (orientation) {
-                                    VideoOrientation.PORTRAIT -> "Portrait 9:16"
-                                    VideoOrientation.LANDSCAPE -> "Landscape 16:9"
+                                    VideoOrientation.PORTRAIT -> "عمودی 9:16"
+                                    VideoOrientation.LANDSCAPE -> "افقی 16:9"
                                 }
                             }",
                             style = MaterialTheme.typography.bodyMedium,
@@ -304,19 +304,19 @@ fun ExportScreen(
                         )
 
                         Text(
-                            text = "Resolution: $width × $height",
+                            text = "رزولوشن: $width × $height",
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextPrimary
                         )
 
                         Text(
-                            text = "Duration: ${settings.durationSeconds} seconds",
+                            text = "مدت زمان: ${settings.durationSeconds} ثانیه",
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextPrimary
                         )
 
                         Text(
-                            text = "File: ${uiState.lastExportedFile?.name ?: "video.mp4"}",
+                            text = "فایل: ${uiState.lastExportedFile?.name ?: "video.mp4"}",
                             style = MaterialTheme.typography.labelSmall,
                             color = TextMuted
                         )
@@ -338,7 +338,7 @@ fun ExportScreen(
 
                         Toast.makeText(
                             context,
-                            "Saved to Device Movies Gallery!",
+                            "ویدیو در گالری ذخیره شد",
                             Toast.LENGTH_SHORT
                         ).show()
                     },
@@ -369,9 +369,9 @@ fun ExportScreen(
 
                     Text(
                         text = if (uiState.isSavedToGallery) {
-                            "Saved in Movies/CinematicAnimator"
+                            "در گالری ذخیره شد"
                         } else {
-                            "Save to Phone Gallery"
+                            "ذخیره در گالری گوشی"
                         },
                         fontWeight = FontWeight.Bold
                     )
@@ -385,7 +385,7 @@ fun ExportScreen(
                             context.startActivity(
                                 android.content.Intent.createChooser(
                                     shareIntent,
-                                    "Share Cinematic Video"
+                                    "اشتراک گذاری ویدیوی سینمایی"
                                 )
                             )
                         }
@@ -412,7 +412,7 @@ fun ExportScreen(
 
                     Spacer(modifier = Modifier.width(8.dp))
 
-                    Text("Share Video File")
+                    Text("اشتراک گذاری فایل ویدیو")
                 }
 
                 TextButton(
@@ -420,7 +420,7 @@ fun ExportScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        "Done / Back to Projects",
+                        "پایان / بازگشت به پروژه ها",
                         color = TextSecondary
                     )
                 }
@@ -428,7 +428,7 @@ fun ExportScreen(
             } else {
 
                 Text(
-                    text = "Please keep app open while hardware encoder finishes frames",
+                    text = "لطفا تا پایان ساخت فریم ها، برنامه را باز نگه دارید",
                     style = MaterialTheme.typography.labelSmall,
                     color = TextMuted,
                     modifier = Modifier.fillMaxWidth()
